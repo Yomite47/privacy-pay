@@ -21,6 +21,7 @@ export function PayPageClient() {
   const [signature, setSignature] = useState("");
   const [explorerUrl, setExplorerUrl] = useState("");
   const [receipt, setReceipt] = useState("");
+  const [claimLink, setClaimLink] = useState("");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -93,6 +94,15 @@ export function PayPageClient() {
       };
 
       setReceipt(JSON.stringify(receiptPayload, null, 2));
+      
+      // Generate Claim Link
+      if (typeof window !== "undefined") {
+        const receiptJson = JSON.stringify(receiptPayload);
+        const encodedReceipt = encodeURIComponent(receiptJson);
+        const link = `${window.location.origin}/inbox?receipt=${encodedReceipt}`;
+        setClaimLink(link);
+      }
+
       setStatus("Payment sent on devnet. Receipt generated.");
     } catch (e) {
       if (e instanceof Error) {
@@ -109,12 +119,26 @@ export function PayPageClient() {
     }
   };
 
+  const handleCopyClaimLink = async () => {
+    if (!claimLink) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(claimLink);
+        setStatus("Claim Link copied! Send this to the receiver.");
+      } else {
+        setStatus("Clipboard is not available.");
+      }
+    } catch {
+      setStatus("Failed to copy link.");
+    }
+  };
+
   const handleCopyReceipt = async () => {
     if (!receipt) return;
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(receipt);
-        setStatus("Receipt copied to clipboard.");
+        setStatus("Receipt JSON copied to clipboard.");
       } else {
         setStatus("Clipboard is not available in this browser.");
       }

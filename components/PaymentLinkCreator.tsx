@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { getOrCreateInboxKeypair } from "@/lib/crypto/keys";
 import { encryptMemo } from "@/lib/crypto/encrypt";
 
 export function PaymentLinkCreator() {
+  const { publicKey } = useWallet();
   const [toAddress, setToAddress] = useState("");
   const [amountLamports, setAmountLamports] = useState("");
   const [memoText, setMemoText] = useState("");
   const [link, setLink] = useState("");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+
+  // Auto-fill receiver address from connected wallet
+  useEffect(() => {
+    if (publicKey) {
+      setToAddress(publicKey.toBase58());
+    }
+  }, [publicKey]);
 
   const handleGenerateLink = () => {
     setStatus("");

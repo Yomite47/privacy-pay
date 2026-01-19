@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { getOrCreateInboxKeypair } from "@/lib/crypto/keys";
 import { decryptMemo } from "@/lib/crypto/encrypt";
 
@@ -51,12 +52,33 @@ function saveStoredReceipts(receipts: ReceiptRecord[]) {
   window.localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(receipts));
 }
 
-export default function InboxPage() {
+function InboxContent() {
   const wallet = useWallet();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const [receiptInput, setReceiptInput] = useState("");
   const [items, setItems] = useState<InboxItem[]>([]);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+
+  // Load receipt from URL if present
+  useEffect(() => {
+    const urlReceipt = searchParams.get("receipt");
+    if (urlReceipt) {
+      try {
+        const decoded = decodeURIComponent(urlReceipt);
+        // Pre-fill the input and try to auto-add
+        setReceiptInput(decoded);
+        // We can't immediately call handleAddReceipt because state hasn't updated,
+        // so we'll just set the input and let the user click "Add" or 
+        // we can use a separate effect. For safety/UX, let's pre-fill and show a message.
+        setStatus("Receipt detected from link. Click 'Add Payment to Inbox' below.");
+      } catch {
+        setError("Invalid receipt link.");
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const stored = loadStoredReceipts();
@@ -181,10 +203,10 @@ export default function InboxPage() {
         </h1>
         <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
           <h2 className="text-sm font-semibold text-slate-100">
-            Paste receipt
+            Add Payment
           </h2>
           <p className="mt-1 text-[11px] text-slate-400">
-            Paste receipt to add payment.
+            Paste a receipt JSON below, or use a "Claim Link" to auto-fill.
           </p>
           <p className="mt-1 text-[11px] text-slate-400">
             Decrypt memo (only works if you have the right inbox keys).
@@ -199,11 +221,10 @@ export default function InboxPage() {
             placeholder="Paste receipt JSON here"
           />
           <button
-            type="button"
             onClick={handleAddReceipt}
-            className="mt-2 rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-900 hover:bg-white"
+            className="mt-3 rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-900 hover:bg-white"
           >
-            Add to inbox
+            Add Payment to Inbox
           </button>
           {status && (
             <p className="mt-2 text-[11px] text-emerald-400">
@@ -217,81 +238,86 @@ export default function InboxPage() {
           )}
         </section>
 
-        <section className="space-y-3">
-          {items.length === 0 && (
-            <p className="text-sm text-slate-400">
-              No inbox items yet. Paste a receipt to get started.
-            </p>
-          )}
-          {items.map((item, index) => {
-            const solAmount = item.receipt.amountLamports / 1_000_000_000;
-            const explorerUrl = `https://explorer.solana.com/tx/${item.receipt.signature}?cluster=devnet`;
-
-            return (
-              <div
-                key={`${item.receipt.ref}-${index}`}
-                className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200"
-              >
-                <p className="text-xs text-slate-400">
-                  Ref: {item.receipt.ref || "n/a"}
-                </p>
-                <p className="text-xs text-slate-400">
-                  From: {shorten(item.receipt.from)}
-                </p>
-                <p className="text-xs text-slate-400">
-                  To: {shorten(item.receipt.to)}
-                </p>
-                <p className="text-xs text-slate-400">
-                  Amount: {solAmount.toString()} SOL
-                </p>
-                <p className="text-xs text-slate-400">
-                  Signature:{" "}
+        <div className="space-y-4">
+          {items.map((item, i) => (
+            <div
+              key={item.receipt.ref}
+              className="rounded-lg border border-slate-800 bg-slate-900/40 p-4"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-slate-400">
+                    {new Date(item.receipt.createdAt).toLocaleString()}
+                  </p>
+                  <p className="font-mono text-xs text-slate-200">
+                    From: {shorten(item.receipt.from)}
+                  </p>
+                  <p className="font-mono text-xs text-slate-200">
+                    Amount: {item.receipt.amountLamports / 1_000_000_000} SOL
+                  </p>
+                </div>
+                <div className="text-right">
                   <a
-                    href={explorerUrl}
+                    href={`https://explorer.solana.com/tx/${item.receipt.signature}?cluster=devnet`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-emerald-400 underline"
+                    className="text-[10px] text-emerald-400 underline"
                   >
-                    {shorten(item.receipt.signature)}
+                    View Tx
                   </a>
-                </p>
-                {item.receipt.encryptedMemo && (
-                  <p className="mt-2 text-xs text-emerald-400">
-                    Private memo attached (encrypted).
-                  </p>
-                )}
-                {!item.receipt.encryptedMemo && (
-                  <p className="mt-2 text-xs text-slate-400">
-                    No private memo attached.
-                  </p>
-                )}
-                <p className="mt-1 text-[11px] text-slate-400">
-                  If you imported the wrong keys, memo decryption will fail.
-                </p>
-                {item.receipt.encryptedMemo && (
-                  <button
-                    type="button"
-                    onClick={() => handleDecrypt(index)}
-                    className="mt-2 rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-900 hover:bg-white"
-                  >
-                    Decrypt memo
-                  </button>
-                )}
-                {item.decryptedMemo && (
-                  <div className="mt-2 rounded-md border border-slate-700 bg-slate-950 p-2 text-[11px] text-slate-100">
-                    {item.decryptedMemo}
+                </div>
+              </div>
+
+              <div className="mt-3 border-t border-slate-800 pt-3">
+                {item.decryptedMemo ? (
+                  <div>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">
+                      Decrypted Memo
+                    </p>
+                    <p className="mt-1 text-sm text-emerald-300">
+                      {item.decryptedMemo}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">
+                      Encrypted Memo
+                    </p>
+                    <code className="mt-1 block truncate text-[10px] text-slate-600">
+                      {item.receipt.encryptedMemo || "(none)"}
+                    </code>
+                    {item.decryptError && (
+                      <p className="mt-2 text-[10px] text-red-400">
+                        {item.decryptError}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => handleDecrypt(i)}
+                      className="mt-2 rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-300 hover:bg-slate-700"
+                    >
+                      Decrypt
+                    </button>
                   </div>
                 )}
-                {item.decryptError && (
-                  <p className="mt-2 text-[11px] text-red-400">
-                    {item.decryptError}
-                  </p>
-                )}
               </div>
-            );
-          })}
-        </section>
+            </div>
+          ))}
+
+          {items.length === 0 && (
+            <p className="text-center text-xs text-slate-500">
+              No receipts in inbox.
+            </p>
+          )}
+        </div>
       </div>
     </main>
+  );
+}
+
+export default function InboxPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading inbox...</div>}>
+      <InboxContent />
+    </Suspense>
   );
 }

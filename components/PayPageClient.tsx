@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
@@ -10,13 +10,52 @@ export function PayPageClient() {
   const searchParams = useSearchParams();
   const wallet = useWallet();
 
-  const to = searchParams.get("to") ?? "";
-  const rawM = searchParams.get("m");
-  const refFromLink = searchParams.get("ref");
+  const [to, setTo] = useState(searchParams.get("to") ?? "");
+  const [rawM, setRawM] = useState(searchParams.get("m") ?? "");
+  const [refFromLink, setRefFromLink] = useState(searchParams.get("ref") ?? "");
+  
+  const [amountSol, setAmountSol] = useState(() => {
+    const paramAmount = searchParams.get("amountLamports");
+    if (paramAmount) {
+       const parsed = Number(paramAmount);
+       if (Number.isFinite(parsed) && parsed > 0) {
+          return (parsed / 1_000_000_000).toString();
+       }
+    }
+    return "";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      try {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        
+        const hashTo = params.get("to");
+        if (hashTo) setTo(hashTo);
+        
+        const hashM = params.get("m");
+        if (hashM) setRawM(hashM);
+        
+        const hashRef = params.get("ref");
+        if (hashRef) setRefFromLink(hashRef);
+
+        const hashAmount = params.get("amountLamports");
+        if (hashAmount) {
+           const parsed = Number(hashAmount);
+           if (Number.isFinite(parsed) && parsed > 0) {
+              setAmountSol((parsed / 1_000_000_000).toString());
+           }
+        }
+      } catch (e) {
+        console.error("Failed to parse hash params", e);
+      }
+    }
+  }, []);
+
   const encryptedMemoBlob = rawM ? decodeURIComponent(rawM) : "";
   const hasEncryptedMemo = !!encryptedMemoBlob;
 
-  const [amountSol, setAmountSol] = useState("");
   const [sending, setSending] = useState(false);
   const [signature, setSignature] = useState("");
   const [explorerUrl, setExplorerUrl] = useState("");
@@ -99,7 +138,7 @@ export function PayPageClient() {
       if (typeof window !== "undefined") {
         const receiptJson = JSON.stringify(receiptPayload);
         const encodedReceipt = encodeURIComponent(receiptJson);
-        const link = `${window.location.origin}/inbox?receipt=${encodedReceipt}`;
+        const link = `${window.location.origin}/inbox#receipt=${encodedReceipt}`;
         setClaimLink(link);
       }
 
@@ -236,8 +275,17 @@ export function PayPageClient() {
               onClick={handleCopyReceipt}
               className="rounded-md bg-slate-800 px-3 py-1 text-xs font-medium text-slate-100 hover:bg-slate-700"
             >
-              Copy Receipt
+              Copy Receipt JSON
             </button>
+            {claimLink && (
+              <button
+                type="button"
+                onClick={handleCopyClaimLink}
+                className="rounded-md bg-emerald-900/40 px-3 py-1 text-xs font-medium text-emerald-100 hover:bg-emerald-900/60"
+              >
+                Copy Claim Link
+              </button>
+            )}
           </div>
           <textarea
             className="mt-3 h-28 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-[11px] text-slate-100"

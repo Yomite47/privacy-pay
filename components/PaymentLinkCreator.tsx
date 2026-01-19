@@ -59,11 +59,17 @@ export function PaymentLinkCreator() {
       params.set("ref", ref);
 
       const baseQuery = params.toString();
-      let fullLink = baseQuery ? `${baseUrl}?${baseQuery}` : baseUrl;
+      let fullLink = baseUrl;
 
+      const parts = [];
+      if (baseQuery) parts.push(baseQuery);
+      
       if (encryptedMemoBlob) {
-        const memoPart = `m=${encodeURIComponent(encryptedMemoBlob)}`;
-        fullLink = baseQuery ? `${fullLink}&${memoPart}` : `${baseUrl}?${memoPart}`;
+        parts.push(`m=${encodeURIComponent(encryptedMemoBlob)}`);
+      }
+
+      if (parts.length > 0) {
+        fullLink = `${baseUrl}#${parts.join("&")}`;
       }
 
       setLink(fullLink);

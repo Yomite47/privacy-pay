@@ -19,7 +19,8 @@ export function InboxKeySection() {
   useEffect(() => {
     try {
       const key = getInboxPublicKeyBase58();
-      setPublicKey(key);
+      // Defer state update to avoid synchronous render warning
+      setTimeout(() => setPublicKey(key), 0);
     } catch {
       // ignore
     }

@@ -2,9 +2,10 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { getOrCreateInboxKeypair } from "@/lib/crypto/keys";
 import { decryptMemo } from "@/lib/crypto/encrypt";
+import { verifyTransactionOnChain } from "@/lib/solana/verify";
 
 type ReceiptRecord = {
   ref: string;
@@ -55,27 +56,40 @@ function saveStoredReceipts(receipts: ReceiptRecord[]) {
 function InboxContent() {
   const wallet = useWallet();
   const searchParams = useSearchParams();
-  const router = useRouter();
   
   const [receiptInput, setReceiptInput] = useState("");
   const [items, setItems] = useState<InboxItem[]>([]);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
-  // Load receipt from URL if present
+  // Load receipt from URL if present (query param OR hash fragment)
   useEffect(() => {
+    // Check query param (legacy/standard)
     const urlReceipt = searchParams.get("receipt");
     if (urlReceipt) {
       try {
         const decoded = decodeURIComponent(urlReceipt);
-        // Pre-fill the input and try to auto-add
         setReceiptInput(decoded);
-        // We can't immediately call handleAddReceipt because state hasn't updated,
-        // so we'll just set the input and let the user click "Add" or 
-        // we can use a separate effect. For safety/UX, let's pre-fill and show a message.
         setStatus("Receipt detected from link. Click 'Add Payment to Inbox' below.");
+        return;
       } catch {
         setError("Invalid receipt link.");
+      }
+    }
+
+    // Check hash fragment (privacy-preserving)
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash.substring(1); // remove #
+      const params = new URLSearchParams(hash);
+      const hashReceipt = params.get("receipt");
+      if (hashReceipt) {
+         try {
+          const decoded = decodeURIComponent(hashReceipt);
+          setReceiptInput(decoded);
+          setStatus("Receipt detected from secure link. Click 'Add Payment to Inbox' below.");
+        } catch {
+          setError("Invalid receipt link.");
+        }
       }
     }
   }, [searchParams]);
@@ -90,7 +104,7 @@ function InboxContent() {
     setItems(inboxItems);
   }, []);
 
-  const handleAddReceipt = () => {
+  const handleAddReceipt = async () => {
     setStatus("");
     setError("");
 
@@ -128,6 +142,21 @@ function InboxContent() {
         throw new Error("Receipt is not addressed to your connected wallet.");
       }
 
+      // Verify on-chain before adding!
+      setStatus("Verifying transaction on Solana Devnet...");
+      
+      const verification = await verifyTransactionOnChain(
+        parsed.signature,
+        parsed.from,
+        parsed.to,
+        parsed.amountLamports,
+        parsed.encryptedMemo
+      );
+
+      if (!verification.isValid) {
+        throw new Error(verification.error || "Transaction verification failed.");
+      }
+
       const record: ReceiptRecord = {
         ref: parsed.ref,
         signature: parsed.signature,
@@ -139,6 +168,10 @@ function InboxContent() {
       };
 
       setItems((prev) => {
+        // Check for duplicates
+        if (prev.some(p => p.receipt.signature === record.signature)) {
+            return prev;
+        }
         const next: InboxItem[] = [
           {
             receipt: record,
@@ -153,16 +186,13 @@ function InboxContent() {
       });
 
       setReceiptInput("");
-      setStatus(
-        !wallet.connected
-          ? "Receipt added. Connect wallet to verify receiver address."
-          : "Receipt added to inbox."
-      );
+      setStatus("Receipt verified and added to inbox.");
     } catch (e) {
+      setStatus(""); // Clear verifying status
       if (e instanceof Error) {
         setError(e.message);
       } else {
-        setError("Failed to parse receipt.");
+        setError("Failed to parse or verify receipt.");
       }
     }
   };
@@ -206,7 +236,7 @@ function InboxContent() {
             Add Payment
           </h2>
           <p className="mt-1 text-[11px] text-slate-400">
-            Paste a receipt JSON below, or use a "Claim Link" to auto-fill.
+            Paste a receipt JSON below, or use a &quot;Claim Link&quot; to auto-fill.
           </p>
           <p className="mt-1 text-[11px] text-slate-400">
             Decrypt memo (only works if you have the right inbox keys).

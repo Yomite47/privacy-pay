@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
+  --solana-green: #14F195;
+  --solana-purple: #9945FF;
 }
 
 @theme inline {
@@ -10,12 +12,14 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-solana-green: var(--solana-green);
+  --color-solana-purple: var(--solana-purple);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
   }
 }
 
@@ -23,4 +27,39 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(153, 69, 255, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(20, 241, 149, 0.15) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Wallet Adapter Overrides */
+.wallet-adapter-button {
+  background-image: linear-gradient(to right, var(--solana-purple), var(--solana-green)) !important;
+  color: black !important;
+  font-weight: bold !important;
+  transition: all 0.2s ease !important;
+  border-radius: 0.5rem !important;
+}
+
+.wallet-adapter-button:hover {
+  opacity: 0.9 !important;
+  transform: scale(1.02);
+}
+
+.wallet-adapter-button:active {
+  transform: scale(0.98);
+}
+
+.wallet-adapter-dropdown-list {
+  background: #1a1a1a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.wallet-adapter-dropdown-list-item {
+  color: white !important;
+}
+
+.wallet-adapter-dropdown-list-item:hover {
+  background: rgba(153, 69, 255, 0.2) !important;
 }

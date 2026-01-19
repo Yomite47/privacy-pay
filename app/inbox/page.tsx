@@ -226,106 +226,127 @@ function InboxContent() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-8 text-slate-50">
-      <div className="w-full max-w-2xl space-y-6 text-left">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Inbox (Phase 0)
-        </h1>
-        <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
-          <h2 className="text-sm font-semibold text-slate-100">
+    <main className="flex min-h-screen flex-col items-center p-8 bg-black text-white">
+      <div className="w-full max-w-3xl space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              Inbox <span className="text-sm font-normal text-slate-500 ml-2 font-mono">(Phase 0)</span>
+            </h1>
+            <p className="text-slate-400 mt-1">Manage your payment receipts and encrypted memos.</p>
+          </div>
+        </div>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-bold text-white mb-4">
             Add Payment
           </h2>
-          <p className="mt-1 text-[11px] text-slate-400">
-            Paste a receipt JSON below, or use a &quot;Claim Link&quot; to auto-fill.
-          </p>
-          <p className="mt-1 text-[11px] text-slate-400">
-            Decrypt memo (only works if you have the right inbox keys).
-          </p>
-          <p className="mt-1 text-[11px] text-slate-400">
-            If you cleared browser storage, import your keys first.
-          </p>
-          <textarea
-            className="mt-2 h-24 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-[11px] text-slate-100"
-            value={receiptInput}
-            onChange={(e) => setReceiptInput(e.target.value)}
-            placeholder="Paste receipt JSON here"
-          />
-          <button
-            onClick={handleAddReceipt}
-            className="mt-3 rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-900 hover:bg-white"
-          >
-            Add Payment to Inbox
-          </button>
-          {status && (
-            <p className="mt-2 text-[11px] text-emerald-400">
-              {status}
-            </p>
-          )}
-          {error && (
-            <p className="mt-2 text-[11px] text-red-400">
-              {error}
-            </p>
-          )}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-400">
+              <div className="bg-black/30 p-3 rounded border border-slate-800">
+                <p className="font-semibold text-slate-300 mb-1">Receipt JSON</p>
+                Paste the raw receipt JSON or use a "Claim Link" to auto-fill.
+              </div>
+              <div className="bg-black/30 p-3 rounded border border-slate-800">
+                <p className="font-semibold text-slate-300 mb-1">Decryption</p>
+                Only works if you have the matching keys in your local storage.
+              </div>
+            </div>
+            
+            <textarea
+              className="w-full h-32 rounded-lg border border-slate-700 bg-black p-4 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono resize-none"
+              value={receiptInput}
+              onChange={(e) => setReceiptInput(e.target.value)}
+              placeholder='Paste receipt JSON here: {"ref":"...", "signature":"...", ...}'
+            />
+            
+            <button
+              onClick={handleAddReceipt}
+              className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-500 transition-colors"
+            >
+              Add Payment to Inbox
+            </button>
+          </div>
         </section>
 
+        {status && (
+          <div className="p-4 rounded-lg bg-emerald-900/20 border border-emerald-900/50">
+            <p className="text-sm font-medium text-emerald-400">
+              {status}
+            </p>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 rounded-lg bg-red-900/20 border border-red-900/50">
+            <p className="text-sm font-medium text-red-400">
+              {error}
+            </p>
+          </div>
+        )}
+
         <div className="space-y-4">
+          <h2 className="text-xl font-bold text-white px-1">Your Receipts</h2>
+          
           {items.map((item, i) => (
             <div
               key={item.receipt.ref}
-              className="rounded-lg border border-slate-800 bg-slate-900/40 p-4"
+              className="rounded-lg border border-slate-800 bg-slate-900 p-6"
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-slate-400">
-                    {new Date(item.receipt.createdAt).toLocaleString()}
-                  </p>
-                  <p className="font-mono text-xs text-slate-200">
-                    From: {shorten(item.receipt.from)}
-                  </p>
-                  <p className="font-mono text-xs text-slate-200">
-                    Amount: {item.receipt.amountLamports / 1_000_000_000} SOL
-                  </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-slate-500 bg-black px-2 py-0.5 rounded border border-slate-800">
+                      {new Date(item.receipt.createdAt).toLocaleString()}
+                    </span>
+                    <a
+                      href={`https://explorer.solana.com/tx/${item.receipt.signature}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      View Tx
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2 font-mono text-xs text-slate-300">
+                    <span className="opacity-50">From:</span>
+                    <span className="bg-black px-1.5 py-0.5 rounded text-slate-200">{shorten(item.receipt.from)}</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <a
-                    href={`https://explorer.solana.com/tx/${item.receipt.signature}?cluster=devnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-emerald-400 underline"
-                  >
-                    View Tx
-                  </a>
+                
+                <div className="text-left sm:text-right">
+                  <div className="text-2xl font-bold text-white tabular-nums">
+                    {(item.receipt.amountLamports / 1_000_000_000).toLocaleString()} <span className="text-sm text-slate-500 font-normal">SOL</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-3 border-t border-slate-800 pt-3">
+              <div className="mt-4 pt-4 border-t border-slate-800">
                 {item.decryptedMemo ? (
-                  <div>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">
+                  <div className="bg-emerald-900/10 rounded p-3 border border-emerald-900/30">
+                    <p className="text-[10px] text-emerald-500 uppercase tracking-wider font-bold mb-1">
                       Decrypted Memo
                     </p>
-                    <p className="mt-1 text-sm text-emerald-300">
+                    <p className="text-sm text-slate-200 font-medium">
                       {item.decryptedMemo}
                     </p>
                   </div>
-                ) : (
-                  <div>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">
-                      Encrypted Memo
+                ) : item.decryptError ? (
+                  <div className="bg-red-900/10 rounded p-3 border border-red-900/30">
+                    <p className="text-xs text-red-400">
+                      {item.decryptError}
                     </p>
-                    <code className="mt-1 block truncate text-[10px] text-slate-600">
-                      {item.receipt.encryptedMemo || "(none)"}
-                    </code>
-                    {item.decryptError && (
-                      <p className="mt-2 text-[10px] text-red-400">
-                        {item.decryptError}
-                      </p>
-                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      Encrypted Message
+                    </div>
                     <button
                       onClick={() => handleDecrypt(i)}
-                      className="mt-2 rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-300 hover:bg-slate-700"
+                      className="px-3 py-1.5 rounded bg-slate-800 border border-slate-700 text-xs font-medium text-white hover:bg-slate-700 transition-colors"
                     >
-                      Decrypt
+                      Decrypt Message
                     </button>
                   </div>
                 )}
@@ -334,9 +355,11 @@ function InboxContent() {
           ))}
 
           {items.length === 0 && (
-            <p className="text-center text-xs text-slate-500">
-              No receipts in inbox.
-            </p>
+            <div className="text-center py-12 rounded-lg border border-dashed border-slate-800 bg-slate-900/50">
+              <p className="text-sm text-slate-500">
+                No receipts in inbox yet.
+              </p>
+            </div>
           )}
         </div>
       </div>

@@ -2,20 +2,18 @@ import { InboxKeySection } from "@/components/InboxKeySection";
 
 export default function SettingsPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-8 text-slate-50">
-      <div className="w-full max-w-xl space-y-4 text-left">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Settings
-        </h1>
-        <p className="text-sm text-slate-300">
-          Export keys (backup).
-        </p>
-        <p className="text-sm text-slate-300">
-          Import keys (restore).
-        </p>
-        <p className="text-sm text-slate-300">
-          Losing keys means losing ability to decrypt old memos.
-        </p>
+    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-black text-white">
+      <div className="w-full max-w-xl space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Settings
+          </h1>
+          <p className="mt-2 text-slate-400 leading-relaxed">
+            Manage your local encryption keys. <br/>
+            <span className="text-sm text-red-400/80">Warning: Losing these keys means you cannot decrypt past memos.</span>
+          </p>
+        </div>
+        
         <InboxKeySection />
       </div>
     </main>

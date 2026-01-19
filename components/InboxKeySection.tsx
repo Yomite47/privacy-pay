@@ -89,7 +89,7 @@ export function InboxKeySection() {
 
     try {
       const message = new TextEncoder().encode(
-        "Sign this message to restore your Privacy Pay inbox keys.\n\nThis will overwrite any existing keys in this browser."
+        "Sign this message to restore your Cipher Pay inbox keys.\n\nThis will overwrite any existing keys in this browser."
       );
       const signature = await wallet.signMessage(message);
       
@@ -108,81 +108,114 @@ export function InboxKeySection() {
   };
 
   return (
-    <section className="mt-10 w-full max-w-xl rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-left">
-      <h2 className="text-sm font-semibold text-slate-100">
-        Inbox Encryption Public Key
-      </h2>
-      <p className="mt-1 text-xs text-slate-300">
-        These keys encrypt your private memos, not your wallet.
-      </p>
-      <p className="mt-1 text-[11px] text-slate-400">
-        Export keys (backup) if you switch browser or device.
-      </p>
-      <p className="mt-1 text-[11px] text-amber-300">
-        Losing keys means losing ability to decrypt old memos.
-      </p>
-
-      <div className="mt-3 flex items-center gap-2">
-        <code className="flex-1 truncate rounded bg-slate-950 px-2 py-1 text-[11px] text-slate-100">
-          {publicKey || "No inbox encryption key available in this browser."}
-        </code>
-        <button
-          type="button"
-          onClick={handleCopyPublicKey}
-          className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-900 hover:bg-white"
-        >
-          Copy
-        </button>
+    <section className="w-full max-w-xl rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-xl">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-white">
+            Inbox Encryption Keys
+          </h2>
+          <p className="mt-1 text-xs text-slate-400">
+            Manage your keys to decrypt private memos
+          </p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-900/50">
+          <span className="text-xs font-bold text-emerald-500 uppercase tracking-wide">Active</span>
+        </div>
       </div>
 
-      <div className="mt-4 space-y-2">
-        <div className="flex gap-2">
+      <div className="space-y-6">
+        <div>
           <button
             type="button"
-            onClick={handleExport}
-            className="rounded-md bg-slate-800 px-3 py-1 text-xs font-medium text-slate-100 hover:bg-slate-700"
+            onClick={handleRestoreFromWallet}
+            className="w-full rounded-lg bg-indigo-600 px-4 py-4 text-sm font-bold text-white hover:bg-indigo-500 transition-colors"
           >
-            Export keys (backup)
+            <div className="flex items-center justify-center gap-3">
+              Restore Keys from Wallet Signature
+            </div>
           </button>
-          <button
-            type="button"
-            onClick={handleImport}
-            className="rounded-md bg-slate-800 px-3 py-1 text-xs font-medium text-slate-100 hover:bg-slate-700"
-          >
-            Import keys (restore)
-          </button>
-        </div>
-        
-        <div className="mt-2">
-            <button
-                type="button"
-                onClick={handleRestoreFromWallet}
-                className="w-full rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500"
-            >
-                Or restore keys from Wallet Signature (Easy)
-            </button>
-            <p className="mt-1 text-[10px] text-slate-400">
-                Uses your wallet signature to generate consistent keys across devices.
-            </p>
+          <p className="mt-3 text-center text-xs text-slate-500 max-w-xs mx-auto">
+            Recommended: Uses your wallet signature to generate consistent keys across all your devices.
+          </p>
         </div>
 
-        <textarea
-          className="mt-1 h-28 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-[11px] text-slate-100"
-          placeholder="Exported inbox keys JSON goes here. Do not share this with anyone."
-          value={exported}
-          onChange={(e) => setExported(e.target.value)}
-        />
+        <div className="pt-6 border-t border-slate-800">
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer p-2 -m-2 rounded-lg hover:bg-slate-800 transition-colors">
+              <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-200 transition-colors">
+                Advanced Options
+              </span>
+              <div className="p-1 rounded-md text-slate-400 group-hover:text-white transition-colors">
+                <svg className="w-4 h-4 transition-transform duration-300 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </summary>
+            
+            <div className="mt-4 space-y-4">
+              <div className="p-4 rounded-lg bg-black/30 border border-slate-800">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Public Encryption Key</p>
+                    <code className="block w-full truncate text-xs font-mono text-emerald-400/80">
+                      {publicKey || "No inbox encryption key available..."}
+                    </code>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyPublicKey}
+                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors"
+                    title="Copy Key"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    className="flex-1 px-3 py-2.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors"
+                  >
+                    Export Backup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImport}
+                    className="flex-1 px-3 py-2.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors"
+                  >
+                    Import Backup
+                  </button>
+                </div>
+
+                <textarea
+                  className="w-full h-24 rounded-lg border border-slate-700 bg-black p-4 text-[10px] font-mono text-slate-400 placeholder-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+                  placeholder="Paste exported inbox keys JSON here..."
+                  value={exported}
+                  onChange={(e) => setExported(e.target.value)}
+                />
+              </div>
+            </div>
+          </details>
+        </div>
       </div>
 
       {status && (
-        <p className="mt-2 text-[11px] text-emerald-400">
-          {status}
-        </p>
+        <div className="mt-6 p-3 rounded-lg bg-emerald-900/20 border border-emerald-900/50">
+          <p className="text-xs font-medium text-emerald-400 flex items-center gap-2">
+            {status}
+          </p>
+        </div>
       )}
+
       {error && (
-        <p className="mt-2 text-[11px] text-red-400">
-          {error}
-        </p>
+        <div className="mt-6 p-3 rounded-lg bg-red-900/20 border border-red-900/50">
+          <p className="text-xs font-medium text-red-400 flex items-center gap-2">
+            {error}
+          </p>
+        </div>
       )}
     </section>
   );

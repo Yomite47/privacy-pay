@@ -4,13 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const linkBaseClasses =
-  "text-xs font-medium px-2 py-1 rounded-md transition-colors";
+  "text-xs font-medium px-3 py-1.5 rounded-full transition-all duration-200 border border-transparent";
 
 function linkClasses(active: boolean) {
   if (active) {
-    return `${linkBaseClasses} bg-slate-100 text-slate-900`;
+    return `${linkBaseClasses} bg-slate-900 border-slate-700 text-solana-green shadow-[0_0_10px_-2px_rgba(20,241,149,0.3)]`;
   }
-  return `${linkBaseClasses} text-slate-200 hover:bg-slate-800`;
+  return `${linkBaseClasses} text-slate-400 hover:text-white hover:border-slate-800 hover:bg-slate-900/50`;
 }
 
 export function NavBar() {
@@ -22,10 +22,13 @@ export function NavBar() {
   const isSettings = pathname === "/settings";
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950/80">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-xl">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-sm font-semibold text-slate-100">
-          Privacy Pay (Devnet)
+        <Link 
+          href="/" 
+          className="text-lg font-bold tracking-tight bg-gradient-to-r from-solana-purple to-solana-green bg-clip-text text-transparent hover:opacity-80 transition-opacity"
+        >
+          Cipher Pay <span className="text-xs font-mono text-slate-500 ml-1">(Devnet)</span>
         </Link>
         <nav className="flex items-center gap-2">
           <Link href="/" className={linkClasses(isHome)}>

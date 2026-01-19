@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Privacy Pay (Devnet)",
+  title: "Cipher Pay (Devnet)",
   description: "Simple link-based payments on Solana Devnet with client-side encrypted memos and receipt-based inbox syncing.",
 };
 
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-950 text-slate-50`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <WalletConnectionProvider>
           <NavBar />

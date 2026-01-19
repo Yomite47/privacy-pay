@@ -1,5 +1,5 @@
 {
-  "name": "privacy-pay",
+  "name": "cipher-pay",
   "version": "0.1.0",
   "description": "Simple link-based payments on Solana Devnet with client-side encrypted memos and receipt-based inbox syncing.",
   "private": true,

@@ -98,87 +98,115 @@ export function PaymentLinkCreator() {
   };
 
   return (
-    <section className="mt-10 w-full max-w-xl rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-left">
-      <h2 className="text-sm font-semibold text-slate-100">
-        Create Payment Link (Phase 0)
-      </h2>
-      <p className="mt-1 text-[11px] text-slate-400">
-        The memo, if provided, is encrypted with your inbox encryption key and
-        cannot be read by the payer.
-      </p>
-      <div className="mt-3 space-y-2">
-        <div>
-          <label className="block text-[11px] text-slate-300">
-            Receiver wallet address (your address)
-          </label>
-          <input
-            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-            value={toAddress}
-            onChange={(e) => setToAddress(e.target.value)}
-            placeholder="Receiver Solana address"
-          />
+    <section className="w-full rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-xl">
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-white">
+              Create Payment Link
+            </h2>
+            <p className="mt-1 text-xs text-slate-400">
+              Generate a secure link to receive SOL on Devnet
+            </p>
+          </div>
         </div>
-        <div>
-          <label className="block text-[11px] text-slate-300">
-            Amount (lamports)
-          </label>
-          <input
-            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-            value={amountLamports}
-            onChange={(e) => setAmountLamports(e.target.value)}
-            placeholder="e.g. 1000000"
-          />
+
+        <div className="space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 ml-1">
+              Receiver Address
+            </label>
+            <input
+              className="w-full rounded-lg border border-slate-700 bg-black px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+              value={toAddress}
+              onChange={(e) => setToAddress(e.target.value)}
+              placeholder="Receiver Solana address"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 ml-1">
+              Amount (Lamports)
+            </label>
+            <input
+              className="w-full rounded-lg border border-slate-700 bg-black px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+              value={amountLamports}
+              onChange={(e) => setAmountLamports(e.target.value)}
+              placeholder="e.g. 1000000"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5 ml-1">
+              <label className="block text-xs font-semibold text-slate-300">
+                Private Memo
+              </label>
+              <span className="flex items-center gap-1 text-[10px] text-indigo-400 font-medium bg-indigo-900/30 px-2 py-0.5 rounded-full">
+                End-to-End Encrypted
+              </span>
+            </div>
+            <textarea
+              className="w-full h-24 rounded-lg border border-slate-700 bg-black px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+              value={memoText}
+              onChange={(e) => setMemoText(e.target.value)}
+              placeholder="Write a private note... Only the receiver can read this."
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-[11px] text-slate-300">
-            Memo (optional, private)
-          </label>
-          <textarea
-            className="mt-1 h-20 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100"
-            value={memoText}
-            onChange={(e) => setMemoText(e.target.value)}
-            placeholder="Private memo, encrypted for your inbox only"
-          />
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={handleGenerateLink}
+            className="flex-1 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 transition-colors"
+          >
+            Generate Secure Link
+          </button>
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            className="px-4 py-3 rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold text-white hover:bg-slate-700 transition-colors"
+            title="Copy Link"
+          >
+            Copy
+          </button>
         </div>
+
+        {link && (
+          <div className="mt-6">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 ml-1">
+              Your Secure Link
+            </label>
+            <div className="relative group cursor-pointer" onClick={handleCopyLink}>
+              <div className="absolute inset-0 bg-indigo-900/10 rounded-lg group-hover:bg-indigo-900/20 transition-colors" />
+              <textarea
+                className="w-full h-20 rounded-lg border border-indigo-900/50 bg-transparent px-4 py-3 text-xs text-indigo-400 font-mono focus:outline-none resize-none cursor-pointer"
+                value={link}
+                readOnly
+              />
+              <div className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[10px] text-white font-medium">Click to Copy</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {status && (
+          <div className="mt-4 p-3 rounded-lg bg-emerald-900/20 border border-emerald-900/50">
+            <p className="text-xs font-medium text-emerald-400 flex items-center gap-2">
+              {status}
+            </p>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 p-3 rounded-lg bg-red-900/20 border border-red-900/50">
+            <p className="text-xs font-medium text-red-400 flex items-center gap-2">
+              {error}
+            </p>
+          </div>
+        )}
       </div>
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={handleGenerateLink}
-          className="rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-900 hover:bg-white"
-        >
-          Generate Link
-        </button>
-        <button
-          type="button"
-          onClick={handleCopyLink}
-          className="rounded-md bg-slate-800 px-3 py-1 text-xs font-medium text-slate-100 hover:bg-slate-700"
-        >
-          Copy Link
-        </button>
-      </div>
-      {link && (
-        <div className="mt-3">
-          <label className="block text-[11px] text-slate-300">
-            Generated link
-          </label>
-          <textarea
-            className="mt-1 h-16 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-100"
-            value={link}
-            readOnly
-          />
-        </div>
-      )}
-      {status && (
-        <p className="mt-2 text-[11px] text-emerald-400">
-          {status}
-        </p>
-      )}
-      {error && (
-        <p className="mt-2 text-[11px] text-red-400">
-          {error}
-        </p>
-      )}
     </section>
   );
 }

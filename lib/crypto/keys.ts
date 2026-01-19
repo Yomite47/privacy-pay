@@ -150,7 +150,8 @@ export async function restoreKeysFromSignature(signature: Uint8Array) {
   }
 
   // Hash the signature to get a 32-byte seed
-  const hashBuffer = await window.crypto.subtle.digest("SHA-256", signature);
+  // Cast to any to avoid TS error about ArrayBufferLike vs ArrayBuffer in Vercel build
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", signature as any);
   const seed = new Uint8Array(hashBuffer);
 
   // Generate keypair from the seed (using it as the secret key)

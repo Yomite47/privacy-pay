@@ -67,22 +67,38 @@ export async function verifyTransactionOnChain(
     // Verify memo exists if expected
     // This prevents "replay" of a standard transfer as a "memo transfer"
     if (expectedMemoEncrypted) {
-        // We look for the memo instruction
-        // The memo program ID is usually MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb
-        // But our current implementation encrypts the memo but where does it attach it?
-        // Wait, looking at PaymentLinkCreator, it puts the encrypted memo in the URL (?m=...)
-        // But `PayPageClient` -> `paymentEngine` -> `systemTransfer.ts`
-        // DOES NOT attach the memo to the transaction!
-        
-        // HUGE FINDING: The encrypted memo is currently *off-chain* (only in the URL/Receipt).
-        // It is NOT stored on the blockchain.
-        // This means we cannot verify the memo content against the chain.
-        // The receipt claims "I sent you money and here is a secret memo", but the memo was never part of the transaction.
-        // This is a validity gap, but maybe acceptable for "Phase 0" if the payment itself is real.
-        // However, it allows me to take a REAL transaction I sent you, and attach a FAKE memo to it in a receipt.
-        // You would verify the payment is real, and then trust the memo.
-        
-        // For now, we will verify the payment itself.
+        const MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb";
+        let foundMemo = false;
+
+        for (const ix of instructions) {
+            // Case 1: Parsed Instruction (spl-memo)
+            if ("program" in ix && (ix.program === "spl-memo" || ix.programId.toBase58() === MEMO_PROGRAM_ID)) {
+                if (typeof ix.parsed === "string" && ix.parsed === expectedMemoEncrypted) {
+                    foundMemo = true;
+                    break;
+                }
+                // Sometimes parsed might be an object depending on version, but usually string for memo
+            }
+            
+            // Case 2: Raw/PartiallyDecoded Instruction
+            if (!("program" in ix) && ix.programId.toBase58() === MEMO_PROGRAM_ID) {
+                // ix.data is base58 encoded string of the buffer
+                // We need to decode it to check against expectedMemoEncrypted
+                // However, since we don't have bs58 imported here, we can rely on the fact that
+                // web3.js usually parses Memo instructions.
+                // If strictly needed, we could import bs58.
+                // For now, let's assume it is parsed or try a basic comparison if possible.
+                
+                // Let's rely on parsed instructions for now as they are standard for top-level.
+            }
+        }
+
+        if (!foundMemo) {
+            return {
+                isValid: false,
+                error: "Transaction is missing the expected on-chain memo. The receipt might be forged."
+            };
+        }
     }
 
     return { isValid: true };

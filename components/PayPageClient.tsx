@@ -110,6 +110,7 @@ export function PayPageClient() {
         payer: wallet,
         toPubkey: to.trim(),
         amountLamports,
+        encryptedMemo: encryptedMemoBlob,
       });
 
       const explorer = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;

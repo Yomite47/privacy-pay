@@ -5,6 +5,7 @@ export type SendPaymentParams = {
   payer: WalletContextState;
   toPubkey: string;
   amountLamports: number;
+  encryptedMemo?: string;
 };
 
 export type SendPaymentResult = {

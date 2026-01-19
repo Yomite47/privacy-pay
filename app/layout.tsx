@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Privacy-First Payments",
-  description: "Privacy-first payment links on Solana Devnet",
+  title: "Privacy Pay (Devnet)",
+  description: "Simple link-based payments on Solana Devnet with client-side encrypted memos and receipt-based inbox syncing.",
 };
 
 export default function RootLayout({

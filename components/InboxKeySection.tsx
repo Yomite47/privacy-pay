@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import {
   getInboxPublicKeyBase58,
   exportInboxKeys,
   importInboxKeys,
+  restoreKeysFromSignature,
 } from "@/lib/crypto/keys";
 
 export function InboxKeySection() {
+  const wallet = useWallet();
   const [publicKey, setPublicKey] = useState<string>("");
   const [exported, setExported] = useState<string>("");
   const [status, setStatus] = useState<string>("");
@@ -74,6 +77,35 @@ export function InboxKeySection() {
     }
   };
 
+  const handleRestoreFromWallet = async () => {
+    setStatus("");
+    setError("");
+
+    if (!wallet.connected || !wallet.signMessage) {
+      setError("Connect a wallet that supports message signing.");
+      return;
+    }
+
+    try {
+      const message = new TextEncoder().encode(
+        "Sign this message to restore your Privacy Pay inbox keys.\n\nThis will overwrite any existing keys in this browser."
+      );
+      const signature = await wallet.signMessage(message);
+      
+      await restoreKeysFromSignature(signature);
+      
+      const key = getInboxPublicKeyBase58();
+      setPublicKey(key);
+      setStatus("Keys restored from wallet signature!");
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError("Failed to restore keys from wallet.");
+      }
+    }
+  };
+
   return (
     <section className="mt-10 w-full max-w-xl rounded-lg border border-slate-800 bg-slate-900/60 p-4 text-left">
       <h2 className="text-sm font-semibold text-slate-100">
@@ -119,6 +151,20 @@ export function InboxKeySection() {
             Import keys (restore)
           </button>
         </div>
+        
+        <div className="mt-2">
+            <button
+                type="button"
+                onClick={handleRestoreFromWallet}
+                className="w-full rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500"
+            >
+                Or restore keys from Wallet Signature (Easy)
+            </button>
+            <p className="mt-1 text-[10px] text-slate-400">
+                Uses your wallet signature to generate consistent keys across devices.
+            </p>
+        </div>
+
         <textarea
           className="mt-1 h-28 w-full rounded-md border border-slate-700 bg-slate-950 p-2 text-[11px] text-slate-100"
           placeholder="Exported inbox keys JSON goes here. Do not share this with anyone."

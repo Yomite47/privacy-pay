@@ -143,3 +143,19 @@ export function importInboxKeys(exported: string) {
     throw new Error("Failed to import inbox keys.");
   }
 }
+
+export async function restoreKeysFromSignature(signature: Uint8Array) {
+  if (!isBrowser()) {
+    throw new Error("Keys can only be restored in a browser environment.");
+  }
+
+  // Hash the signature to get a 32-byte seed
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", signature);
+  const seed = new Uint8Array(hashBuffer);
+
+  // Generate keypair from the seed (using it as the secret key)
+  const keypair = nacl.box.keyPair.fromSecretKey(seed);
+
+  storeKeypair(keypair.publicKey, keypair.secretKey);
+  return keypair;
+}

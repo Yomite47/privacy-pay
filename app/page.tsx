@@ -69,7 +69,7 @@ export default function LandingPage() {
 
       {/* Tech Stack Footer */}
       <div className="mt-auto py-12 text-center text-slate-500 text-sm">
-        <p>Built for the Solana Renaissance Hackathon 2024</p>
+        <p>Built for the Solana Renaissance Hackathon 2026</p>
         <div className="flex justify-center gap-4 mt-4">
           <span className="hover:text-white transition-colors cursor-default">Light Protocol</span>
           <span>•</span>

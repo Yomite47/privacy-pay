@@ -14,8 +14,16 @@ const getRpcUrl = () => {
   }
   
   // Client-side
-  // We use the public variable, which should be '/api/rpc' to use our proxy
-  return process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com";
+  const val = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "/api/rpc";
+  
+  // If it's already absolute (e.g. direct Helius URL), use it
+  if (val.startsWith("http")) {
+    return val;
+  }
+  
+  // If it's relative (e.g. "/api/rpc"), prepend the window origin
+  // @solana/web3.js Connection requires an absolute URL
+  return `${window.location.origin}${val}`;
 };
 
 export const SOLANA_RPC_ENDPOINT = getRpcUrl();

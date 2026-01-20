@@ -1,6 +1,7 @@
 import { WalletStatus } from "@/components/WalletStatus";
 import { InboxKeySection } from "@/components/InboxKeySection";
 import { PaymentLinkCreator } from "@/components/PaymentLinkCreator";
+import { ShieldedBalance } from "@/components/ShieldedBalance";
 
 export default function Home() {
   return (
@@ -26,6 +27,7 @@ export default function Home() {
       </div>
       
       <div className="mt-12 w-full max-w-xl space-y-8">
+        <ShieldedBalance />
         <InboxKeySection />
         <PaymentLinkCreator />
       </div>

@@ -15,16 +15,16 @@ const getRpcUrl = () => {
   
   // Client-side
   // TEMPORARY: Use direct Helius URL to prevent Proxy Timeouts during ZK Proof generation
-  // The proxy on Vercel (Hobby Tier) times out after 10s, which is often too short for Light Protocol "getProgramAccounts"
-  // Since this is a Devnet key already shared in context, we use it directly for stability.
-  return "https://devnet.helius-rpc.com/?api-key=53a683b1-001c-4c53-b1a1-7a94d285c0da";
+  // We use an environment variable so the key is NOT exposed in Git code.
+  // Note: This variable must be defined in Vercel as "NEXT_PUBLIC_HELIUS_RPC_URL"
+  const directUrl = process.env.NEXT_PUBLIC_HELIUS_RPC_URL;
   
-  /* 
-  // Original Secure Proxy Logic (Restore for Production if using Pro/Enterprise Vercel)
+  if (directUrl) return directUrl;
+
+  // Fallback to proxy if direct URL is not set (might timeout on heavy ZK ops)
   const val = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "/api/rpc";
   if (val.startsWith("http")) return val;
   return `${window.location.origin}${val}`;
-  */
 };
 
 export const SOLANA_RPC_ENDPOINT = getRpcUrl();

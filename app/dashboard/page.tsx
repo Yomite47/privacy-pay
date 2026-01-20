@@ -18,8 +18,8 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-black text-white">
-      <div className="w-full max-w-2xl space-y-12 text-center">
-        <div className="space-y-4">
+      <div className="w-full max-w-2xl space-y-16 text-center">
+        <div className="space-y-8">
           <div className="inline-block px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400">
             Live on Solana Devnet
           </div>
@@ -28,7 +28,7 @@ export default function Home() {
             Cipher Pay
           </h1>
           
-          <div className="space-y-2 text-lg text-slate-400 max-w-lg mx-auto min-h-[3.5rem] transition-all duration-300">
+          <div className="space-y-4 text-lg text-slate-400 max-w-lg mx-auto min-h-[3.5rem] transition-all duration-300">
             <p className="animate-in fade-in slide-in-from-bottom-2 duration-300 key={activeTab}">
               {descriptions[activeTab]}
             </p>
@@ -40,7 +40,7 @@ export default function Home() {
         </div>
       </div>
       
-      <div className="mt-12 w-full max-w-xl space-y-8">
+      <div className="mt-20 w-full max-w-xl space-y-8">
         {/* Tab Navigation */}
         <div className="flex p-1 space-x-1 bg-slate-900/50 rounded-xl border border-white/5">
           <button

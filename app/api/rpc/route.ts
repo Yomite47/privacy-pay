@@ -10,6 +10,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'RPC configuration error' }, { status: 500 });
     }
 
+    // Security: Whitelist allowed RPC methods to prevent abuse
+    // This prevents attackers from using your API key for heavy/unauthorized calls (e.g. getProgramAccounts, airdrop)
+    const allowedMethods = [
+      'getLatestBlockhash',
+      'getBalance',
+      'getAccountInfo',
+      'sendTransaction',
+      'getMultipleAccounts',
+      'getRecentPrioritizationFees',
+      'getFeeForMessage',
+      'simulateTransaction',
+      'getSlot',
+      'getHealth'
+    ];
+
+    if (!allowedMethods.includes(body.method)) {
+      console.warn(`Blocked unauthorized RPC method: ${body.method}`);
+      return NextResponse.json({ error: 'Method not allowed' }, { status: 403 });
+    }
+
     const response = await fetch(rpcUrl, {
       method: 'POST',
       headers: {

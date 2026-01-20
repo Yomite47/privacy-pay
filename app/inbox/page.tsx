@@ -3,7 +3,12 @@
 import { useEffect, useState, Suspense } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSearchParams } from "next/navigation";
-import { getOrCreateInboxKeypair } from "@/lib/crypto/keys";
+import { 
+  getOrCreateInboxKeypair, 
+  deriveKeysFromSignature, 
+  setMemoryKeypair, 
+  getMemoryKeypair 
+} from "@/lib/crypto/keys";
 import { decryptMemo } from "@/lib/crypto/encrypt";
 import { verifyTransactionOnChain } from "@/lib/solana/verify";
 
@@ -61,6 +66,35 @@ function InboxContent() {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [isUnlocked, setIsUnlocked] = useState(false);
+
+  // Check if keys are already in memory
+  useEffect(() => {
+    if (getMemoryKeypair()) {
+      setIsUnlocked(true);
+    }
+  }, [wallet.publicKey]); // Re-check if wallet changes
+
+  const handleUnlock = async () => {
+    setError("");
+    setStatus("");
+    try {
+      if (!wallet.connected || !wallet.signMessage) {
+        throw new Error("Please connect a wallet that supports message signing.");
+      }
+      
+      const message = new TextEncoder().encode("Unlock Privacy Pay Inbox");
+      const signature = await wallet.signMessage(message);
+      
+      const keypair = deriveKeysFromSignature(signature);
+      setMemoryKeypair(keypair);
+      setIsUnlocked(true);
+      setStatus("Inbox unlocked successfully.");
+    } catch (e) {
+      console.error(e);
+      setError("Failed to unlock inbox. You must sign the message.");
+    }
+  };
 
   // Load receipt from URL if present (query param OR hash fragment)
   useEffect(() => {
@@ -206,7 +240,18 @@ function InboxContent() {
       if (!target) return prev;
 
       try {
-        const keypair = getOrCreateInboxKeypair();
+        let keypair = getMemoryKeypair();
+        
+        // Fallback to legacy local storage keys if memory keys are missing
+        // This supports old accounts during migration
+        if (!keypair) {
+           keypair = getOrCreateInboxKeypair();
+        }
+
+        if (!keypair) {
+           throw new Error("Inbox is locked. Please click 'Unlock Inbox' above.");
+        }
+
         const memoText = decryptMemo(target.receipt.encryptedMemo, keypair.secretKey);
 
         target.decryptedMemo = memoText;
@@ -236,6 +281,30 @@ function InboxContent() {
             <p className="text-slate-400 mt-1">Manage your payment receipts and encrypted memos.</p>
           </div>
         </div>
+
+        <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-bold text-white mb-4">
+            Unlock Inbox
+          </h2>
+          <div className="bg-slate-800/50 p-4 rounded-lg mb-4">
+            <p className="text-sm text-slate-300 mb-2">
+              For your security, your inbox keys are derived from your wallet signature. 
+              They are never stored on disk.
+            </p>
+            {!isUnlocked ? (
+               <button 
+                 onClick={handleUnlock}
+                 className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded transition-colors"
+               >
+                 Sign to Unlock Inbox
+               </button>
+            ) : (
+               <div className="flex items-center gap-2 text-green-400 font-bold">
+                 <span>🔓 Inbox Unlocked</span>
+               </div>
+            )}
+          </div>
+        </section>
 
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-lg font-bold text-white mb-4">

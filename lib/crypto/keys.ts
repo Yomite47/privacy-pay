@@ -93,6 +93,27 @@ export function exportInboxKeys() {
   return JSON.stringify(payload, null, 2);
 }
 
+// In-memory keypair storage (cleared on refresh)
+let memoryKeypair: nacl.BoxKeyPair | null = null;
+
+export function getMemoryKeypair() {
+  return memoryKeypair;
+}
+
+export function setMemoryKeypair(keypair: nacl.BoxKeyPair) {
+  memoryKeypair = keypair;
+}
+
+export function deriveKeysFromSignature(signature: Uint8Array): nacl.BoxKeyPair {
+  // Use SHA-512 to hash the signature (64 bytes) -> 64 bytes
+  const hash = nacl.hash(signature);
+  // Use first 32 bytes as the secret key
+  const secretKey = hash.slice(0, nacl.box.secretKeyLength);
+  // Derive keypair
+  const keypair = nacl.box.keyPair.fromSecretKey(secretKey);
+  return keypair;
+}
+
 export function importInboxKeys(exported: string) {
   if (!isBrowser()) {
     throw new Error("Inbox keys can only be imported in a browser environment.");
@@ -142,6 +163,14 @@ export function importInboxKeys(exported: string) {
     }
     throw new Error("Failed to import inbox keys.");
   }
+}
+
+export function clearInboxKeys() {
+  if (!isBrowser()) {
+    return;
+  }
+  window.localStorage.removeItem(PUBLIC_KEY_STORAGE_KEY);
+  window.localStorage.removeItem(SECRET_KEY_STORAGE_KEY);
 }
 
 export async function restoreKeysFromSignature(signature: Uint8Array) {

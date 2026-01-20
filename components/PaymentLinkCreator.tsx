@@ -98,7 +98,7 @@ export function PaymentLinkCreator() {
   };
 
   return (
-    <section className="w-full rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-xl">
+    <section className="w-full rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-xl p-6 shadow-xl">
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -117,7 +117,7 @@ export function PaymentLinkCreator() {
               Receiver Address
             </label>
             <input
-              className="w-full rounded-lg border border-slate-700 bg-black px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono transition-all"
               value={toAddress}
               onChange={(e) => setToAddress(e.target.value)}
               placeholder="Receiver Solana address"
@@ -129,7 +129,7 @@ export function PaymentLinkCreator() {
               Amount (Lamports)
             </label>
             <input
-              className="w-full rounded-lg border border-slate-700 bg-black px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono transition-all"
               value={amountLamports}
               onChange={(e) => setAmountLamports(e.target.value)}
               placeholder="e.g. 1000000"
@@ -141,12 +141,12 @@ export function PaymentLinkCreator() {
               <label className="block text-xs font-semibold text-slate-300">
                 Private Memo
               </label>
-              <span className="flex items-center gap-1 text-[10px] text-indigo-400 font-medium bg-indigo-900/30 px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-[10px] text-indigo-300 font-bold bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/20">
                 End-to-End Encrypted
               </span>
             </div>
             <textarea
-              className="w-full h-24 rounded-lg border border-slate-700 bg-black px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+              className="w-full h-24 rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none transition-all"
               value={memoText}
               onChange={(e) => setMemoText(e.target.value)}
               placeholder="Write a private note... Only the receiver can read this."
@@ -158,14 +158,14 @@ export function PaymentLinkCreator() {
           <button
             type="button"
             onClick={handleGenerateLink}
-            className="flex-1 rounded-lg bg-white px-4 py-3 text-sm font-bold text-black hover:bg-slate-200 transition-colors"
+            className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-900/20 transition-all"
           >
             Generate Secure Link
           </button>
           <button
             type="button"
             onClick={handleCopyLink}
-            className="px-4 py-3 rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold text-white hover:bg-slate-700 transition-colors"
+            className="px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm font-semibold text-white hover:bg-white/10 transition-all"
             title="Copy Link"
           >
             Copy
@@ -178,9 +178,9 @@ export function PaymentLinkCreator() {
               Your Secure Link
             </label>
             <div className="relative group cursor-pointer" onClick={handleCopyLink}>
-              <div className="absolute inset-0 bg-indigo-900/10 rounded-lg group-hover:bg-indigo-900/20 transition-colors" />
+              <div className="absolute inset-0 bg-indigo-900/10 rounded-xl group-hover:bg-indigo-900/20 transition-colors" />
               <textarea
-                className="w-full h-20 rounded-lg border border-indigo-900/50 bg-transparent px-4 py-3 text-xs text-indigo-400 font-mono focus:outline-none resize-none cursor-pointer"
+                className="w-full h-20 rounded-xl border border-indigo-500/30 bg-black/40 px-4 py-3 text-xs text-indigo-300 font-mono focus:outline-none resize-none cursor-pointer"
                 value={link}
                 readOnly
               />
@@ -192,7 +192,7 @@ export function PaymentLinkCreator() {
         )}
 
         {status && (
-          <div className="mt-4 p-3 rounded-lg bg-emerald-900/20 border border-emerald-900/50">
+          <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
             <p className="text-xs font-medium text-emerald-400 flex items-center gap-2">
               {status}
             </p>
@@ -200,7 +200,7 @@ export function PaymentLinkCreator() {
         )}
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-red-900/20 border border-red-900/50">
+          <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
             <p className="text-xs font-medium text-red-400 flex items-center gap-2">
               {error}
             </p>

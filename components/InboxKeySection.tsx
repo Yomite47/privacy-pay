@@ -108,7 +108,7 @@ export function InboxKeySection() {
   };
 
   return (
-    <section className="w-full max-w-xl rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-xl">
+    <section className="w-full max-w-xl rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur-xl p-6 shadow-xl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold text-white">
@@ -118,8 +118,8 @@ export function InboxKeySection() {
             Manage your keys to decrypt private memos
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-900/50">
-          <span className="text-xs font-bold text-emerald-500 uppercase tracking-wide">Active</span>
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-inner shadow-emerald-900/20">
+          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">Active</span>
         </div>
       </div>
 
@@ -128,7 +128,7 @@ export function InboxKeySection() {
           <button
             type="button"
             onClick={handleRestoreFromWallet}
-            className="w-full rounded-lg bg-indigo-600 px-4 py-4 text-sm font-bold text-white hover:bg-indigo-500 transition-colors"
+            className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 px-4 py-4 text-sm font-bold text-white transition-all shadow-lg shadow-indigo-900/20"
           >
             <div className="flex items-center justify-center gap-3">
               Restore Keys from Wallet Signature
@@ -139,9 +139,9 @@ export function InboxKeySection() {
           </p>
         </div>
 
-        <div className="pt-6 border-t border-slate-800">
+        <div className="pt-6 border-t border-white/10">
           <details className="group">
-            <summary className="flex items-center justify-between cursor-pointer p-2 -m-2 rounded-lg hover:bg-slate-800 transition-colors">
+            <summary className="flex items-center justify-between cursor-pointer p-2 -m-2 rounded-xl hover:bg-white/5 transition-colors">
               <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-200 transition-colors">
                 Advanced Options
               </span>
@@ -152,8 +152,8 @@ export function InboxKeySection() {
               </div>
             </summary>
             
-            <div className="mt-4 space-y-4">
-              <div className="p-4 rounded-lg bg-black/30 border border-slate-800">
+            <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+              <div className="p-4 rounded-xl bg-black/40 border border-white/10">
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Public Encryption Key</p>
@@ -164,7 +164,7 @@ export function InboxKeySection() {
                   <button
                     type="button"
                     onClick={handleCopyPublicKey}
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition-colors"
+                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/5"
                     title="Copy Key"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -177,21 +177,21 @@ export function InboxKeySection() {
                   <button
                     type="button"
                     onClick={handleExport}
-                    className="flex-1 px-3 py-2.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors"
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-300 transition-colors"
                   >
                     Export Backup
                   </button>
                   <button
                     type="button"
                     onClick={handleImport}
-                    className="flex-1 px-3 py-2.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition-colors"
+                    className="flex-1 px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-300 transition-colors"
                   >
                     Import Backup
                   </button>
                 </div>
 
                 <textarea
-                  className="w-full h-24 rounded-lg border border-slate-700 bg-black p-4 text-[10px] font-mono text-slate-400 placeholder-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+                  className="w-full h-24 rounded-xl border border-white/10 bg-black/40 p-4 text-[10px] font-mono text-slate-400 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none transition-all"
                   placeholder="Paste exported inbox keys JSON here..."
                   value={exported}
                   onChange={(e) => setExported(e.target.value)}
@@ -203,7 +203,7 @@ export function InboxKeySection() {
       </div>
 
       {status && (
-        <div className="mt-6 p-3 rounded-lg bg-emerald-900/20 border border-emerald-900/50">
+        <div className="mt-6 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
           <p className="text-xs font-medium text-emerald-400 flex items-center gap-2">
             {status}
           </p>
@@ -211,7 +211,7 @@ export function InboxKeySection() {
       )}
 
       {error && (
-        <div className="mt-6 p-3 rounded-lg bg-red-900/20 border border-red-900/50">
+        <div className="mt-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
           <p className="text-xs font-medium text-red-400 flex items-center gap-2">
             {error}
           </p>

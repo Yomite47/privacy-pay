@@ -115,19 +115,19 @@ export function ShieldedBalance() {
   if (!publicKey) return null;
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 shadow-sm space-y-6">
+    <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-100">Shielded Balance</h2>
+          <h2 className="text-xl font-bold text-white">Shielded Balance</h2>
           <p className="text-sm text-slate-400 mt-1">
             Private funds (ZK Compressed)
           </p>
         </div>
         <div className="text-right">
           {loadingBalance && balance === null ? (
-            <div className="h-8 w-24 bg-slate-700 animate-pulse rounded"></div>
+            <div className="h-8 w-24 bg-white/10 animate-pulse rounded"></div>
           ) : (
-            <div className="text-3xl font-bold text-emerald-400">
+            <div className="text-3xl font-bold text-emerald-400 drop-shadow-sm">
               {balance?.toFixed(4) ?? "0.0000"} <span className="text-lg text-emerald-600">SOL</span>
             </div>
           )}
@@ -140,34 +140,34 @@ export function ShieldedBalance() {
           <div className="flex gap-4">
             <button
               onClick={() => setMode('shield')}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-emerald-900/20"
             >
               Shield (Deposit)
             </button>
             <button
               onClick={() => setMode('unshield')}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-white/5 hover:bg-white/10 text-slate-200 font-bold py-3 px-4 rounded-xl transition-all border border-white/5"
             >
               Unshield (Withdraw)
             </button>
           </div>
           <button
             onClick={() => setMode('transfer')}
-            className="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2 px-4 rounded-lg transition-colors border border-slate-600"
+            className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-purple-900/20"
           >
             Send Shielded Payment
           </button>
         </div>
       ) : (
-        <form onSubmit={handleAction} className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 animate-in fade-in slide-in-from-top-2">
+        <form onSubmit={handleAction} className="bg-black/20 p-4 rounded-xl border border-white/5 animate-in fade-in slide-in-from-top-2">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium text-slate-200">
+            <h3 className="font-bold text-slate-200">
               {mode === 'shield' ? 'Shield SOL' : mode === 'unshield' ? 'Unshield SOL' : 'Send Shielded SOL'}
             </h3>
             <button 
               type="button"
               onClick={() => { setMode('none'); setAmount(''); setRecipient(''); setStatusMsg(''); }}
-              className="text-slate-400 hover:text-white"
+              className="text-slate-400 hover:text-white transition-colors"
               disabled={processing}
             >
               Cancel
@@ -177,12 +177,12 @@ export function ShieldedBalance() {
           <div className="space-y-4">
             {mode === 'transfer' && (
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Recipient Address</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1.5 ml-1">Recipient Address</label>
                 <input
                   type="text"
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white focus:ring-1 focus:ring-emerald-500 outline-none font-mono text-sm"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none font-mono text-sm transition-all"
                   placeholder="Solana Address"
                   disabled={processing}
                   autoFocus
@@ -191,13 +191,13 @@ export function ShieldedBalance() {
             )}
             
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Amount (SOL)</label>
+              <label className="block text-xs font-semibold text-slate-400 mb-1.5 ml-1">Amount (SOL)</label>
               <input
                 type="number"
                 step="0.000000001"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white focus:ring-1 focus:ring-emerald-500 outline-none"
+                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none font-mono text-sm transition-all"
                 placeholder="0.00"
                 disabled={processing}
                 autoFocus={mode !== 'transfer'}
@@ -207,7 +207,7 @@ export function ShieldedBalance() {
             <button
               type="submit"
               disabled={processing || !amount || (mode === 'transfer' && !recipient)}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors flex justify-center items-center gap-2"
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-xl transition-all flex justify-center items-center gap-2 shadow-lg shadow-purple-900/20"
             >
               {processing ? (
                 <>
@@ -224,13 +224,13 @@ export function ShieldedBalance() {
 
       {/* History */}
       {history.length > 0 && (
-        <div className="mt-6 pt-6 border-t border-slate-700">
-          <h3 className="text-sm font-semibold text-slate-400 mb-3">Recent Activity</h3>
+        <div className="mt-6 pt-6 border-t border-white/10">
+          <h3 className="text-sm font-bold text-slate-400 mb-3 ml-1">Recent Activity</h3>
           <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
             {history.map((activity) => (
               <div 
                 key={activity.signature} 
-                className="flex items-center justify-between p-3 rounded bg-slate-900/50 border border-slate-800 text-sm hover:border-slate-700 transition-colors"
+                className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 text-sm hover:bg-white/10 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${

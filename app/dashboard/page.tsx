@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { WalletStatus } from "@/components/WalletStatus";
 import { InboxKeySection } from "@/components/InboxKeySection";
 import { PaymentLinkCreator } from "@/components/PaymentLinkCreator";
 import { ShieldedBalance } from "@/components/ShieldedBalance";
@@ -17,37 +16,41 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-black text-white">
-      <div className="w-full max-w-2xl space-y-16 text-center">
-        <div className="space-y-8">
-          <div className="inline-block px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400">
-            Live on Solana Devnet
-          </div>
-          
-          <h1 className="text-5xl font-bold tracking-tight text-white">
-            Cipher Pay
-          </h1>
-          
-          <div className="space-y-4 text-lg text-slate-400 max-w-lg mx-auto min-h-[3.5rem] transition-all duration-300">
-            <p className="animate-in fade-in slide-in-from-bottom-2 duration-300 key={activeTab}">
-              {descriptions[activeTab]}
-            </p>
+    <main className="flex min-h-screen flex-col text-white relative overflow-hidden bg-slate-950 pt-24 md:pt-32">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[100px]" />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-start p-4 md:p-8 w-full max-w-4xl mx-auto z-10">
+        <div className="space-y-8 md:space-y-12 text-center w-full max-w-2xl">
+          <div className="space-y-6 md:space-y-10">
+            <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-medium text-emerald-400 shadow-xl shadow-purple-900/5">
+              Live on Solana Devnet
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-400 drop-shadow-sm">
+              Cipher Pay
+            </h1>
+            
+            <div className="space-y-4 text-base md:text-lg text-slate-400 max-w-lg mx-auto min-h-[3.5rem] transition-all duration-300">
+              <p className="animate-in fade-in slide-in-from-bottom-2 duration-300 key={activeTab}">
+                {descriptions[activeTab]}
+              </p>
+            </div>
           </div>
         </div>
         
-        <div className="flex justify-center">
-          <WalletStatus />
-        </div>
-      </div>
-      
-      <div className="mt-20 w-full max-w-xl space-y-8">
+        <div className="mt-12 md:mt-24 w-full max-w-xl space-y-8 md:space-y-12">
         {/* Tab Navigation */}
-        <div className="flex p-1 space-x-1 bg-slate-900/50 rounded-xl border border-white/5">
+        <div className="flex p-1.5 space-x-2 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
           <button
             onClick={() => setActiveTab('shield')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
               activeTab === 'shield'
-                ? 'bg-solana-green text-black shadow-lg'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
@@ -56,9 +59,9 @@ export default function Home() {
           </button>
           <button
             onClick={() => setActiveTab('link')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
               activeTab === 'link'
-                ? 'bg-solana-green text-black shadow-lg'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
@@ -67,9 +70,9 @@ export default function Home() {
           </button>
           <button
             onClick={() => setActiveTab('keys')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
               activeTab === 'keys'
-                ? 'bg-solana-green text-black shadow-lg'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
@@ -96,6 +99,7 @@ export default function Home() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </main>
   );

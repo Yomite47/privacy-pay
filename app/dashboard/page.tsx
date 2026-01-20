@@ -10,6 +10,12 @@ import { Shield, Key, Link as LinkIcon } from "lucide-react";
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'shield' | 'keys' | 'link'>('shield');
 
+  const descriptions = {
+    shield: "Manage your private assets with Zero-Knowledge compression. Shield public SOL, send privately, or unshield back to your wallet.",
+    link: "Generate secure payment links with end-to-end encrypted memos. Share links to receive funds privately.",
+    keys: "Manage your inbox encryption keys. Your keys are derived from your wallet signature and never leave your device."
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-black text-white">
       <div className="w-full max-w-2xl space-y-12 text-center">
@@ -22,8 +28,10 @@ export default function Home() {
             Cipher Pay
           </h1>
           
-          <div className="space-y-2 text-lg text-slate-400 max-w-lg mx-auto">
-            <p>Simple link-based payments with encrypted memos.</p>
+          <div className="space-y-2 text-lg text-slate-400 max-w-lg mx-auto min-h-[3.5rem] transition-all duration-300">
+            <p className="animate-in fade-in slide-in-from-bottom-2 duration-300 key={activeTab}">
+              {descriptions[activeTab]}
+            </p>
           </div>
         </div>
         

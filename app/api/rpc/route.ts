@@ -22,7 +22,17 @@ export async function POST(request: Request) {
       'getFeeForMessage',
       'simulateTransaction',
       'getSlot',
-      'getHealth'
+      'getHealth',
+      // Light Protocol / ZK Compression methods
+      'getProgramAccounts', // Required for fetching state trees
+      'getValidityProof',   // Required for ZK transactions
+      'getCompressedAccount',
+      'getCompressedTokenAccountsByOwner',
+      'getCompressedTransaction',
+      'getCompressedTransactionsByOwner',
+      'getAsset',
+      'getAssetProof',
+      'getAssetsByOwner'
     ];
 
     if (!allowedMethods.includes(body.method)) {

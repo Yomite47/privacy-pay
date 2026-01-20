@@ -13,7 +13,8 @@ export function PayPageClient() {
   const [to, setTo] = useState(searchParams.get("to") ?? "");
   const [rawM, setRawM] = useState(searchParams.get("m") ?? "");
   const [refFromLink, setRefFromLink] = useState(searchParams.get("ref") ?? "");
-  
+  const [isVerified, setIsVerified] = useState(false);
+
   const [amountSol, setAmountSol] = useState(() => {
     const paramAmount = searchParams.get("amountLamports");
     if (paramAmount) {
@@ -24,6 +25,16 @@ export function PayPageClient() {
     }
     return "";
   });
+
+  // Basic "Verification" Logic (Mock)
+  // In a real app, this would check against a trusted registry or domain service (SNS)
+  useEffect(() => {
+    if (to && to.length >= 32) {
+      // Mock: Just checking structure for now. 
+      // Ideally, check if it's a known merchant or SNS handle.
+      setIsVerified(false); 
+    }
+  }, [to]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash) {
@@ -201,11 +212,23 @@ export function PayPageClient() {
 
         <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-xl">
           <div className="space-y-6">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-slate-800">
-              <span className="text-xs font-semibold text-slate-400">Receiver</span>
-              <code className="text-xs font-mono text-white">
+            <div className="flex flex-col gap-2 p-3 rounded-lg bg-black/30 border border-slate-800">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400">Receiver</span>
+                {isVerified ? (
+                  <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded border border-green-500/30">Verified</span>
+                ) : (
+                  <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">Unverified Address</span>
+                )}
+              </div>
+              <code className="text-xs font-mono text-white break-all">
                 {to || "not specified"}
               </code>
+              {!isVerified && to && (
+                <div className="text-[10px] text-amber-500/80 mt-1">
+                  ⚠️ Verify this address carefully before sending funds.
+                </div>
+              )}
             </div>
 
             <div>

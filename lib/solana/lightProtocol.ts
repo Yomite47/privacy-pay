@@ -6,7 +6,7 @@ import {
   selectMinCompressedSolAccountsForTransfer,
   bn
 } from "@lightprotocol/stateless.js";
-import { PublicKey, Transaction, TransactionInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
+import { PublicKey, Transaction, TransactionInstruction, ParsedTransactionWithMeta, ComputeBudgetProgram } from "@solana/web3.js";
 import { SOLANA_RPC_ENDPOINT, connection } from "@/lib/connection";
 
 export type ShieldedActivity = {
@@ -107,8 +107,13 @@ export async function createShieldTransaction(
     outputStateTreeInfo
   });
   
-  // 4. Create Transaction
-  const transaction = new Transaction().add(ix);
+  // 4. Create Transaction with Compute Budget
+  // ZK Compression requires higher compute budget than default
+  const transaction = new Transaction()
+    .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 1_000_000 }))
+    .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }))
+    .add(ix);
+    
   return transaction;
 }
 
@@ -148,8 +153,12 @@ export async function createUnshieldTransaction(
     recentValidityProof: validityProof.compressedProof
   });
   
-  // 5. Create Transaction
-  const transaction = new Transaction().add(ix);
+  // 5. Create Transaction with Compute Budget
+  const transaction = new Transaction()
+    .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 1_000_000 }))
+    .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }))
+    .add(ix);
+    
   return transaction;
 }
 
@@ -187,7 +196,11 @@ export async function createShieldedTransferTransaction(
     recentValidityProof: validityProof.compressedProof
   });
   
-  // 5. Create Transaction
-  const transaction = new Transaction().add(ix);
+  // 5. Create Transaction with Compute Budget
+  const transaction = new Transaction()
+    .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 1_000_000 }))
+    .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }))
+    .add(ix);
+    
   return transaction;
 }

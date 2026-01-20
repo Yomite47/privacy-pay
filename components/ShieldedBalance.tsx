@@ -24,6 +24,7 @@ export function ShieldedBalance() {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [statusMsg, setStatusMsg] = useState(''); // New granular status
 
   const fetchData = async () => {
     if (!publicKey) return;
@@ -57,6 +58,7 @@ export function ShieldedBalance() {
 
     try {
       setProcessing(true);
+      setStatusMsg("Initializing...");
       const val = parseFloat(amount);
       if (isNaN(val) || val <= 0) {
         throw new Error("Invalid amount");
@@ -64,8 +66,10 @@ export function ShieldedBalance() {
 
       let tx;
       if (mode === 'shield') {
+         setStatusMsg("Fetching state trees (ZK)...");
          tx = await createShieldTransaction(publicKey, val);
       } else if (mode === 'unshield') {
+         setStatusMsg("Generating ZK Proof (this may take 10-20s)...");
          tx = await createUnshieldTransaction(publicKey, val);
       } else if (mode === 'transfer') {
          if (!recipient) throw new Error("Recipient address is required");
@@ -75,13 +79,16 @@ export function ShieldedBalance() {
          } catch {
            throw new Error("Invalid recipient address");
          }
+         setStatusMsg("Generating ZK Proof for transfer...");
          tx = await createShieldedTransferTransaction(publicKey, recipientPubkey, val);
       } else {
         return;
       }
       
+      setStatusMsg("Requesting wallet signature...");
       const signature = await sendTransaction(tx, connection);
       
+      setStatusMsg("Confirming transaction...");
       // Wait for confirmation
       const latestBlockhash = await connection.getLatestBlockhash();
       await connection.confirmTransaction({
@@ -90,6 +97,7 @@ export function ShieldedBalance() {
         lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
       });
       
+      setStatusMsg("Success!");
       // Reset and refresh
       setMode('none');
       setAmount('');
@@ -158,7 +166,7 @@ export function ShieldedBalance() {
             </h3>
             <button 
               type="button"
-              onClick={() => { setMode('none'); setAmount(''); setRecipient(''); }}
+              onClick={() => { setMode('none'); setAmount(''); setRecipient(''); setStatusMsg(''); }}
               className="text-slate-400 hover:text-white"
               disabled={processing}
             >
@@ -204,7 +212,7 @@ export function ShieldedBalance() {
               {processing ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Processing...
+                  {statusMsg || "Processing..."}
                 </>
               ) : (
                 mode === 'shield' ? 'Confirm Shield' : mode === 'unshield' ? 'Confirm Unshield' : 'Send Payment'

@@ -16,7 +16,7 @@ function linkClasses(active: boolean) {
 export function NavBar() {
   const pathname = usePathname();
 
-  const isHome = pathname === "/" || pathname === "";
+  const isDashboard = pathname === "/dashboard";
   const isPay = pathname === "/pay";
   const isInbox = pathname === "/inbox";
   const isSettings = pathname === "/settings";
@@ -31,8 +31,8 @@ export function NavBar() {
           Cipher Pay <span className="text-xs font-mono text-slate-500 ml-1">(Devnet)</span>
         </Link>
         <nav className="flex items-center gap-2">
-          <Link href="/" className={linkClasses(isHome)}>
-            Home
+          <Link href="/dashboard" className={linkClasses(isDashboard)}>
+            Dashboard
           </Link>
           {isPay && (
             <span className={linkClasses(true)}>

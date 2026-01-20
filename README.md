@@ -1,98 +1,114 @@
-## What this is
+# Cipher Pay (Privacy Layer for Solana)
 
-Link-based Solana devnet payments with encrypted memos and a simple inbox UX.
+Cipher Pay is a **Shielded Payment Interface** that brings on-chain privacy to everyday Solana users using **Zero-Knowledge Compression (Light Protocol)**. It allows users to store, transfer, and receive funds privately on Solana, with end-to-end encrypted memos.
 
-- Create a payment link that anyone on devnet can open
-- Attach an optional private memo, encrypted client-side
-- Let the receiver collect payments and decrypt memos in their inbox
+---
 
-## What’s private vs public (Phase 0)
+## 🚀 Key Features
 
-- Private: payment memo / intent (encrypted in the browser)
-- Public: sender address, receiver address, amount, and transaction signature
-- Network: all transfers use normal SystemProgram transfers on Solana devnet
+### 🛡️ Shielded Accounts (The "Shadow Wallet")
+- **Go Private:** Convert public SOL into private, ZK-compressed SOL ("Shielding").
+- **Go Public:** Withdraw back to standard SOL whenever you need it ("Unshielding").
+- **Balance Privacy:** Your shielded balance is stored in a compressed state tree, visible only to you.
 
-## User Guide (Simple)
+### 💸 Private Transfers
+- **Send Anonymously:** Send Shielded SOL to any Solana address.
+- **No Trace:** The transaction is validated via ZK proofs, hiding the specific history of the funds.
+- **Low Cost:** Uses Solana's state compression technology for minimal rent fees.
 
-### 1. Get Ready
-- Install a Solana wallet (Phantom, Solflare, or Backpack).
-- **Important**: Switch your wallet settings to **Devnet**.
-- Get free test SOL from [faucet.solana.com](https://faucet.solana.com).
+### 🔒 Encrypted Memos (Inbox)
+- **Secret Messages:** Attach private notes to your payments (e.g., "Salary for March").
+- **End-to-End Encryption:** Memos are encrypted client-side using a key derived from your wallet signature. Only the recipient can decrypt and read them.
 
-### 2. Receive Money
-- Go to the **Home** page.
-- Connect your wallet.
-- Enter the amount and an optional secret message (memo).
-- Click "Generate Link" and copy it.
-- Send this link to the person paying you.
+### ⚡ Technical Highlights
+- **ZK Compression:** Built on **Light Protocol (v3)** and **Helius** RPCs.
+- **Client-Side Logic:** No centralized database. Your keys and data live in your browser/wallet.
+- **Secure RPC:** Uses a secure proxy to protect API keys while allowing high-performance direct connections for ZK proof generation.
 
-### 3. Send Money
-- Open the payment link.
-- Connect your wallet (make sure you are on Devnet).
-- Click **Send**.
-- **Important**: When done, click **Copy Receipt**. You must send this receipt text to the receiver!
+---
 
-### 4. Check Inbox
-- Receiver goes to the **Inbox** page.
-- Paste the receipt text into the box.
-- Click **Add**.
-- If a secret message is attached, click **Decrypt** to read it.
+## 🛠️ Setup & Installation
 
-## How to demo (5 steps)
+### Prerequisites
+- Node.js (v18 or higher)
+- A Solana Wallet (Phantom, Solflare, or Backpack)
+- **Devnet SOL** (Get it from [faucet.solana.com](https://faucet.solana.com))
 
-1. **Receiver creates link**
-   - Receiver connects their wallet on the Home page
-   - Receiver creates a payment link with an optional private memo
-2. **Payer opens link and sends devnet SOL**
-   - Payer opens the link, connects their wallet, and sends SOL on devnet
-3. **Payer copies receipt**
-   - After sending, the Pay page shows a JSON receipt
-   - Payer copies the receipt to clipboard
-4. **Receiver pastes receipt into inbox**
-   - Receiver goes to the Inbox page
-   - Receiver pastes the receipt JSON and adds it to the inbox
-5. **Receiver decrypts memo**
-   - Receiver decrypts the memo using their inbox encryption keys
-   - If keys were lost or not imported, memo decryption will fail
+### 1. Clone & Install
+```bash
+git clone https://github.com/yomite47/privacy-pay.git
+cd privacy-pay
+npm install
+```
 
-## Known limitations (Phase 0)
+### 2. Configure Environment
+Create a `.env.local` file in the root directory:
+```env
+# Helius RPC Key (Required for ZK Compression)
+HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_API_KEY
+NEXT_PUBLIC_HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_API_KEY
 
-- Amounts are public on-chain
-- Wallets and transactions are linkable on-chain
-- Inbox syncing is manual: payer must send the receipt to the receiver
-- There is no backend; all state for inbox keys and receipts is in the browser
-- Only the memo is encrypted; routing and balances remain public on Solana
+# Backend Proxy Config
+NEXT_PUBLIC_SOLANA_RPC_URL=/api/rpc
+```
 
-## Light Protocol integration plan (Phase 1)
+### 3. Run Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Phase 1 focuses on integrating Light Protocol for stronger privacy, without
-changing the user-facing UX.
+---
 
-- Only the payment engine under `lib/solana/engines/` is swapped out
-- The UI, payment links, and inbox flow stay the same
-- Light Protocol adds more private routing and compressed state on Solana
-- Phase 1 aims to improve privacy, not to promise full or untraceable privacy
+## 📖 User Guide
 
-### Technical Requirements for Phase 1
-To activate Light Protocol transfers, you need:
+### 1. Shielding Funds (Deposit)
+1. Go to the **Shielded Balance** section on the Home page.
+2. Enter an amount (e.g., `1 SOL`).
+3. Click **"Shield Funds"**.
+4. **Outcome:** Your Public SOL decreases, and your Shielded SOL increases. You are now in the private pool.
 
-1. **Special RPC Provider**:
-   - A Helius or Triton API key is required.
-   - Standard Devnet nodes (`api.devnet.solana.com`) do not support ZK Compression.
+### 2. Sending Shielded SOL
+1. Select **"Send Shielded"**.
+2. Enter the Recipient's Solana Address.
+3. Enter the Amount.
+4. Click **"Send Shielded"**.
+5. **Outcome:** The recipient receives the funds into their Shielded Balance. The public ledger shows a compressed transaction but obscures the link between your specific notes.
 
-2. **WASM Support**:
-   - The `@lightprotocol/stateless.js` SDK uses WebAssembly (WASM).
-   - `next.config.js` must be updated to support `asyncWebAssembly`.
+### 3. Unshielding Funds (Withdraw)
+1. Select **"Unshield (Withdraw)"**.
+2. Enter the amount to withdraw.
+3. Click **"Unshield Funds"**.
+4. **Outcome:** The funds return to your Public Wallet balance.
 
-3. **New Payment Engine**:
-   - Create `lib/solana/engines/lightTransfer.ts`.
-   - Implement "Shielding" (Public SOL → Private Compressed SOL).
-   - Implement "Transfer" (Private Compressed SOL → Private Compressed SOL).
+---
 
-## Hackathon positioning
+## ⚠️ Privacy Model (Important)
 
-This project focuses on making privacy on Solana usable.
-Phase 0 proves the UX and protects payment intent via encrypted memos.
-Phase 1 plugs in the Light Protocol SDK for stronger privacy routing.
-The goal is a simple, receipt-based inbox that feels familiar to users.
-We stay honest about on-chain visibility and do not claim full privacy.
+Cipher Pay provides **Pseudonymity** and **Asset Graph Obfuscation**.
+
+- **What is Private:**
+  - The link between specific "notes" (UTXOs) is broken via ZK Proofs.
+  - The content of encrypted memos is visible only to the recipient.
+  - Your Shielded Balance is not directly visible on standard block explorers.
+
+- **What is Public:**
+  - **Entry/Exit:** Shielding and Unshielding actions are visible on-chain.
+  - **Amounts:** In this V1 implementation (Stateless), transfer amounts may be inferred.
+  - **Timing:** If you shield and immediately unshield to a new wallet, observers can correlate the timing.
+
+**Recommendation:** For better privacy, keep funds shielded for longer periods and avoid immediate round-trip transactions.
+
+---
+
+## 🏆 Hackathon Context
+
+This project was built to demonstrate that **Privacy on Solana is possible and usable today**.
+We leverage **Light Protocol's ZK Compression** to create a seamless experience where users can choose when to be public and when to be private.
+
+**Roadmap:**
+- [x] Phase 1: Shield/Unshield & Private Transfers (Done)
+- [x] Phase 2: Encrypted Inbox (Done)
+- [ ] Phase 3: Relayer Integration (Gasless, untraceable withdrawals)
+- [ ] Phase 4: Confidential Transfers (Hiding amounts completely)
+

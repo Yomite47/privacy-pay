@@ -22,9 +22,15 @@ const getRpcUrl = () => {
   if (directUrl) return directUrl;
 
   // Fallback to proxy if direct URL is not set (might timeout on heavy ZK ops)
-  const val = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "/api/rpc";
-  if (val.startsWith("http")) return val;
-  return `${window.location.origin}${val}`;
+  // If running locally without env vars, default to public devnet to avoid "Unexpected error"
+  const val = process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
+  if (val) {
+      if (val.startsWith("http")) return val;
+      return `${window.location.origin}${val}`;
+  }
+  
+  // Default to public devnet if nothing is configured
+  return "https://api.devnet.solana.com";
 };
 
 export const SOLANA_RPC_ENDPOINT = getRpcUrl();

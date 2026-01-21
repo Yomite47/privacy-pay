@@ -1,4 +1,5 @@
 import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Buffer } from "buffer";
 import type { SendPaymentParams, SendPaymentResult } from "@/lib/solana/paymentEngine";
 import { connection } from "@/lib/connection";
 
@@ -35,7 +36,7 @@ export async function sendPaymentWithSystemTransfer(
       new TransactionInstruction({
         keys: [{ pubkey: payer.publicKey, isSigner: true, isWritable: true }],
         programId: MEMO_PROGRAM_ID,
-        data: new TextEncoder().encode(encryptedMemo),
+        data: Buffer.from(encryptedMemo, "utf-8"),
       })
     );
   }

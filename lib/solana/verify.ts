@@ -85,11 +85,12 @@ export async function verifyTransactionOnChain(
     // This prevents "replay" of a standard transfer as a "memo transfer"
     if (expectedMemoEncrypted) {
         const MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb";
+        const MEMO_V1_PROGRAM_ID = "Memo1UhkJRfHyvLelZZ1i0yZNqOzVR5yq9QTYX3uad4";
         let foundMemo = false;
 
         for (const ix of instructions) {
             // Case 1: Parsed Instruction (spl-memo)
-            if ("program" in ix && (ix.program === "spl-memo" || ix.programId.toBase58() === MEMO_PROGRAM_ID)) {
+            if ("program" in ix && (ix.program === "spl-memo" || ix.programId.toBase58() === MEMO_PROGRAM_ID || ix.programId.toBase58() === MEMO_V1_PROGRAM_ID)) {
                 if (typeof ix.parsed === "string" && ix.parsed === expectedMemoEncrypted) {
                     foundMemo = true;
                     break;
@@ -98,7 +99,7 @@ export async function verifyTransactionOnChain(
             }
             
             // Case 2: Raw/PartiallyDecoded Instruction
-            if (!("program" in ix) && ix.programId.toBase58() === MEMO_PROGRAM_ID) {
+            if (!("program" in ix) && (ix.programId.toBase58() === MEMO_PROGRAM_ID || ix.programId.toBase58() === MEMO_V1_PROGRAM_ID)) {
                 // ix.data is base58 encoded string of the buffer
                 // We need to decode it to check against expectedMemoEncrypted
                 // However, since we don't have bs58 imported here, we can rely on the fact that

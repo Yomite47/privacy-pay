@@ -3,7 +3,7 @@ import { Buffer } from "buffer";
 import type { SendPaymentParams, SendPaymentResult } from "@/lib/solana/paymentEngine";
 import { connection } from "@/lib/connection";
 
-const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb");
+const MEMO_PROGRAM_ID = new PublicKey("Memo1UhkJRfHyvLelZZ1i0yZNqOzVR5yq9QTYX3uad4");
 
 export async function sendPaymentWithSystemTransfer(
   params: SendPaymentParams,

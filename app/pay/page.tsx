@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { PayPageClient } from "@/components/PayPageClient";
 
+export const dynamic = "force-dynamic";
+
 export default function PayPage() {
   return (
     <Suspense fallback={

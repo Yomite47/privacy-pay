@@ -23,6 +23,9 @@ export async function verifyTransactionOnChain(
     }
 
     if (tx.meta?.err) {
+      // Log the specific error for debugging
+      console.error("On-chain transaction error:", tx.meta.err);
+      // Even if it failed, it exists. But for a "Receipt", a failed tx is invalid.
       return { isValid: false, error: "Transaction failed on-chain." };
     }
 

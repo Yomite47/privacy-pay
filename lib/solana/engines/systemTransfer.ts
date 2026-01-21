@@ -18,10 +18,10 @@ export async function sendPaymentWithSystemTransfer(
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
 
   const transaction = new Transaction({
-    recentBlockhash: latestBlockhash.blockhash,
     feePayer: payer.publicKey,
+    recentBlockhash: latestBlockhash.blockhash,
   });
-
+  
   transaction.add(
     SystemProgram.transfer({
       fromPubkey: payer.publicKey,
@@ -40,17 +40,9 @@ export async function sendPaymentWithSystemTransfer(
     );
   }
 
-  if (!payer.signTransaction) {
-    throw new Error("Wallet does not support transaction signing.");
-  }
-
-  const signed = await payer.signTransaction(transaction);
-  const raw = signed.serialize();
-
-  const signature = await connection.sendRawTransaction(raw, {
-    skipPreflight: false,
-    preflightCommitment: "confirmed",
-  });
+  // Use the standard sendTransaction method from wallet adapter
+  // We explicitly pass the connection and signers (none needed here as wallet signs)
+  const signature = await payer.sendTransaction(transaction, connection);
 
   await connection.confirmTransaction(
     {

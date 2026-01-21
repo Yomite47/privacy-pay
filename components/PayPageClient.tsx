@@ -156,12 +156,10 @@ export function PayPageClient() {
 
       setStatus("Payment sent on devnet. Receipt generated.");
     } catch (e) {
+      console.error("Payment Error:", e);
       if (e instanceof Error) {
-        if (e.message.includes("blockhash") || e.message.includes("simulation")) {
-          setError("Transaction failed. Please check if your wallet is on Devnet and has SOL.");
-        } else {
-          setError(e.message);
-        }
+        // Detailed error for debugging
+        setError(e.message);
       } else {
         setError("Failed to send payment.");
       }

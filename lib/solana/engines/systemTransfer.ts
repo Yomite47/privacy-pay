@@ -35,14 +35,18 @@ export async function sendPaymentWithSystemTransfer(
       new TransactionInstruction({
         keys: [{ pubkey: payer.publicKey, isSigner: true, isWritable: true }],
         programId: MEMO_PROGRAM_ID,
-        data: Buffer.from(encryptedMemo, "utf-8"),
+        data: new TextEncoder().encode(encryptedMemo),
       })
     );
   }
 
   // Use the standard sendTransaction method from wallet adapter
   // We explicitly pass the connection and signers (none needed here as wallet signs)
-  const signature = await payer.sendTransaction(transaction, connection);
+  // We specify preflightCommitment to match our blockhash fetch
+  const signature = await payer.sendTransaction(transaction, connection, {
+    skipPreflight: false,
+    preflightCommitment: "confirmed",
+  });
 
   await connection.confirmTransaction(
     {

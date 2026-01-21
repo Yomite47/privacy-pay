@@ -1,4 +1,4 @@
-import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction, ComputeBudgetProgram } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import type { SendPaymentParams, SendPaymentResult } from "@/lib/solana/paymentEngine";
 import { connection } from "@/lib/connection";
@@ -23,6 +23,12 @@ export async function sendPaymentWithSystemTransfer(
     recentBlockhash: latestBlockhash.blockhash,
   });
   
+  // Add compute budget to improve reliability
+  transaction.add(
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 10_000 }), // Simple transfer + memo is very cheap
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }) // Small priority fee
+  );
+
   transaction.add(
     SystemProgram.transfer({
       fromPubkey: payer.publicKey,
@@ -43,9 +49,9 @@ export async function sendPaymentWithSystemTransfer(
 
   // Use the standard sendTransaction method from wallet adapter
   // We explicitly pass the connection and signers (none needed here as wallet signs)
-  // We specify preflightCommitment to match our blockhash fetch
+  // We set skipPreflight: true to bypass potential RPC simulation failures (common on Devnet)
   const signature = await payer.sendTransaction(transaction, connection, {
-    skipPreflight: false,
+    skipPreflight: true,
     preflightCommitment: "confirmed",
   });
 

@@ -23,11 +23,13 @@ export async function sendPaymentWithSystemTransfer(
     recentBlockhash: latestBlockhash.blockhash,
   });
   
-  // Add compute budget to improve reliability
+  /* 
+  // Temporarily removing Compute Budget to isolate "ProgramAccountNotFound" error
   transaction.add(
-    ComputeBudgetProgram.setComputeUnitLimit({ units: 10_000 }), // Simple transfer + memo is very cheap
-    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }) // Small priority fee
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 10_000 }), 
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }) 
   );
+  */
 
   transaction.add(
     SystemProgram.transfer({

@@ -64,7 +64,9 @@ export function PayPageClient() {
     }
   }, []);
 
-  const encryptedMemoBlob = rawM ? decodeURIComponent(rawM) : "";
+  // rawM comes from URLSearchParams, which already decodes percent-encoded values.
+  // We should NOT decode it again, as that can cause URIError if the content contains "%".
+  const encryptedMemoBlob = rawM;
   const hasEncryptedMemo = !!encryptedMemoBlob;
 
   const [sending, setSending] = useState(false);

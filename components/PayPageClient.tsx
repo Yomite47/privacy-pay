@@ -22,6 +22,7 @@ export function PayPageClient() {
   const [refFromLink, setRefFromLink] = useState(searchParams.get("ref") ?? "");
   const [isVerified, setIsVerified] = useState(false);
   const [isContact, setIsContact] = useState(false);
+  const [sendAsPublic, setSendAsPublic] = useState(false);
 
   useEffect(() => {
     if (to) {
@@ -184,12 +185,15 @@ export function PayPageClient() {
               }
           } else {
               // Send to others without known PK: 
-              // Since we don't have the receiver's encryption key in this demo,
-              // we encrypt it with OUR key so at least it's on-chain and we can read it in Sent history.
-              // The receiver won't be able to decrypt it unless they share our key (unlikely).
-              // Ideally, we'd use a key registry or wallet-based encryption (Phantom adapter).
-              console.warn("Encrypting memo with Sender's key (Receiver cannot decrypt without key exchange).");
-              finalEncryptedMemo = encryptMemo(memoInput, myKeypair.publicKey);
+              if (sendAsPublic) {
+                   // Plaintext fallback for usability
+                   console.log("Sending memo as plaintext (Public)");
+                   finalEncryptedMemo = JSON.stringify({ plaintext: memoInput });
+              } else {
+                  // Default privacy-preserving fallback (Sender only)
+                  console.warn("Encrypting memo with Sender's key (Receiver cannot decrypt without key exchange).");
+                  finalEncryptedMemo = encryptMemo(memoInput, myKeypair.publicKey);
+              }
           }
       }
 
@@ -415,6 +419,36 @@ export function PayPageClient() {
                         : "Write a memo (Note: Receiver may not be able to decrypt without key exchange)"
                   }
                 />
+              )}
+
+              {/* Warning / Toggle Area for Missing Key */}
+              {!isSelfSend && !receiverPk && !hasEncryptedMemo && to && (
+                  <div className="mt-4 p-3 rounded-lg bg-amber-900/10 border border-amber-900/30">
+                      <div className="flex items-start gap-3">
+                          <span className="text-amber-500 text-lg mt-0.5">⚠️</span>
+                          <div>
+                              <p className="text-[11px] text-amber-400 font-bold mb-1">
+                                  Missing Encryption Key
+                              </p>
+                              <p className="text-[10px] text-amber-200/80 mb-3 leading-relaxed">
+                                  The receiver has not shared their Privacy Key (via Payment Link). 
+                                  By default, this memo will be encrypted for <strong>YOUR history only</strong>. The receiver will NOT be able to read it.
+                              </p>
+                              
+                              <label className="flex items-center gap-2 cursor-pointer group">
+                                  <input 
+                                      type="checkbox" 
+                                      checked={sendAsPublic}
+                                      onChange={(e) => setSendAsPublic(e.target.checked)}
+                                      className="w-4 h-4 rounded border-amber-500/50 bg-black/50 text-amber-500 focus:ring-amber-500/50"
+                                  />
+                                  <span className="text-[10px] text-slate-300 group-hover:text-white transition-colors">
+                                      Send as <strong>Public Memo</strong> (Visible to everyone, readable by Receiver)
+                                  </span>
+                              </label>
+                          </div>
+                      </div>
+                  </div>
               )}
             </div>
 

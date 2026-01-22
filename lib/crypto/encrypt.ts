@@ -34,6 +34,14 @@ export function decryptMemo(encryptedMemoBlob: string, receiverBoxSecretKey: Uin
     throw new Error("Invalid encrypted memo format (not JSON).");
   }
 
+  // Check for Plaintext Fallback
+  if (typeof parsed === "object" && parsed !== null && "plaintext" in parsed) {
+    const p = parsed as { plaintext: string };
+    if (typeof p.plaintext === "string") {
+      return p.plaintext;
+    }
+  }
+
   if (
     typeof parsed !== "object" ||
     parsed === null ||

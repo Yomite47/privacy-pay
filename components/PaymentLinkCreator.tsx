@@ -2,17 +2,40 @@
 
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { getOrCreateInboxKeypair } from "@/lib/crypto/keys";
+import { getOrCreateInboxKeypair, getMemoryKeypair, deriveKeysFromSignature, setMemoryKeypair } from "@/lib/crypto/keys";
 import { encryptMemo } from "@/lib/crypto/encrypt";
+import bs58 from "bs58";
 
 export function PaymentLinkCreator() {
-  const { publicKey } = useWallet();
+  const { publicKey, signMessage } = useWallet();
   const [toAddress, setToAddress] = useState("");
   const [amountLamports, setAmountLamports] = useState("");
   const [memoText, setMemoText] = useState("");
   const [link, setLink] = useState("");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [usingTempKey, setUsingTempKey] = useState(false);
+
+  // Check which key is active
+  useEffect(() => {
+    // If no memory keypair, we are using the temp device key
+    setUsingTempKey(!getMemoryKeypair());
+  }, [status, link]); // Re-check when status changes (e.g. after generating)
+
+  const handleUnlock = async () => {
+    try {
+        if (!signMessage) throw new Error("Wallet does not support signing");
+        const message = new TextEncoder().encode("Unlock Privacy Pay Inbox");
+        const signature = await signMessage(message);
+        const keypair = deriveKeysFromSignature(signature);
+        setMemoryKeypair(keypair);
+        setUsingTempKey(false);
+        setStatus("Switched to Wallet Identity Key.");
+    } catch (e) {
+        console.error(e);
+        setError("Failed to unlock wallet identity.");
+    }
+  };
 
   // Auto-fill receiver address from connected wallet
   useEffect(() => {
@@ -31,7 +54,13 @@ export function PaymentLinkCreator() {
     }
 
     try {
-      const receiverKeypair = getOrCreateInboxKeypair();
+      // Prefer the "Unlocked" Identity Key (Derived) if available.
+      // Otherwise fallback to the Device Key (Local/Random).
+      // Note: If using Device Key, the user must decrypt on this same device without Unlocking first.
+      const receiverKeypair = getMemoryKeypair() || getOrCreateInboxKeypair();
+
+      // Include Public Key for End-to-End Encryption
+      const pkBase58 = bs58.encode(receiverKeypair.publicKey);
 
       let encryptedMemoBlob = "";
       if (memoText.trim()) {
@@ -50,6 +79,11 @@ export function PaymentLinkCreator() {
       }
       if (amountLamports.trim()) {
         params.set("amountLamports", amountLamports.trim());
+      }
+      
+      // Add Inbox Public Key
+      if (pkBase58) {
+          params.set("pk", pkBase58);
       }
 
       // Generate a stable reference ID for the payment link
@@ -106,7 +140,7 @@ export function PaymentLinkCreator() {
               Create Payment Link
             </h2>
             <p className="mt-1 text-xs text-slate-400">
-              Generate a secure link to receive SOL on Devnet
+              Generate a secure link to receive Private ZK-SOL
             </p>
           </div>
         </div>
@@ -141,9 +175,20 @@ export function PaymentLinkCreator() {
               <label className="block text-xs font-semibold text-slate-300">
                 Private Memo
               </label>
-              <span className="flex items-center gap-1 text-[10px] text-indigo-300 font-bold bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/20">
-                End-to-End Encrypted
-              </span>
+              <div className="flex gap-2">
+                 {usingTempKey && (
+                    <button 
+                        onClick={handleUnlock}
+                        className="flex items-center gap-1 text-[10px] text-amber-400 font-bold bg-amber-900/20 px-2 py-0.5 rounded-full border border-amber-900/40 hover:bg-amber-900/40 transition-colors" 
+                        title="Click to Unlock Inbox and use your Wallet Identity Key"
+                    >
+                        ⚠️ Using Device Key (Click to Switch)
+                    </button>
+                 )}
+                 <span className="flex items-center gap-1 text-[10px] text-indigo-300 font-bold bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-500/20">
+                    End-to-End Encrypted
+                 </span>
+              </div>
             </div>
             <textarea
               className="w-full h-24 rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none transition-all"

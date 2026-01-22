@@ -3,17 +3,32 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
-import { paymentEngine } from "@/lib/solana/paymentEngine";
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { sendZkPayment, getCompressedBalance } from "@/lib/solana/engines/zkCompressedTransfer";
+import { getMemoryKeypair, getOrCreateInboxKeypair } from "@/lib/crypto/keys";
+import { encryptMemo } from "@/lib/crypto/encrypt";
+import { saveContact, getContacts } from "@/lib/contacts";
+import { Shield, Wallet, UserPlus } from "lucide-react";
+import bs58 from "bs58";
 
 export function PayPageClient() {
   const searchParams = useSearchParams();
   const wallet = useWallet();
 
   const [to, setTo] = useState(searchParams.get("to") ?? "");
+  const [receiverPk, setReceiverPk] = useState(searchParams.get("pk") ?? "");
   const [rawM, setRawM] = useState(searchParams.get("m") ?? "");
+  const [memoInput, setMemoInput] = useState("");
   const [refFromLink, setRefFromLink] = useState(searchParams.get("ref") ?? "");
   const [isVerified, setIsVerified] = useState(false);
+  const [isContact, setIsContact] = useState(false);
+
+  useEffect(() => {
+    if (to) {
+        const contacts = getContacts();
+        setIsContact(contacts.some(c => c.address === to));
+    }
+  }, [to]);
 
   const [amountSol, setAmountSol] = useState(() => {
     const paramAmount = searchParams.get("amountLamports");
@@ -26,12 +41,24 @@ export function PayPageClient() {
     return "";
   });
 
+  // Payment Mode State - Default to Private only
+  const payMode = 'private';
+  const [zkBalance, setZkBalance] = useState<number | null>(null);
+
+  // Fetch ZK Balance
+  useEffect(() => {
+    if (wallet.publicKey) {
+        getCompressedBalance(wallet.publicKey.toBase58())
+            .then(lamports => setZkBalance(lamports / LAMPORTS_PER_SOL))
+            .catch(err => console.error("Failed to fetch ZK balance", err));
+    } else {
+        setZkBalance(null);
+    }
+  }, [wallet.publicKey]);
+
   // Basic "Verification" Logic (Mock)
-  // In a real app, this would check against a trusted registry or domain service (SNS)
   useEffect(() => {
     if (to && to.length >= 32) {
-      // Mock: Just checking structure for now. 
-      // Ideally, check if it's a known merchant or SNS handle.
       setIsVerified(false); 
     }
   }, [to]);
@@ -45,6 +72,9 @@ export function PayPageClient() {
         const hashTo = params.get("to");
         if (hashTo) setTo(hashTo);
         
+        const hashPk = params.get("pk");
+        if (hashPk) setReceiverPk(hashPk);
+
         const hashM = params.get("m");
         if (hashM) setRawM(hashM);
         
@@ -64,8 +94,6 @@ export function PayPageClient() {
     }
   }, []);
 
-  // rawM comes from URLSearchParams, which already decodes percent-encoded values.
-  // We should NOT decode it again, as that can cause URIError if the content contains "%".
   const encryptedMemoBlob = rawM;
   const hasEncryptedMemo = !!encryptedMemoBlob;
 
@@ -77,6 +105,11 @@ export function PayPageClient() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
+  const isSelfSend = useMemo(() => {
+      if (!wallet.publicKey || !to) return false;
+      return wallet.publicKey.toBase58() === to;
+  }, [wallet.publicKey, to]);
+
   const amountLamportsDisplay = useMemo(() => {
     const parsed = Number(amountSol);
     if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -84,6 +117,18 @@ export function PayPageClient() {
     }
     return Math.round(parsed * 1_000_000_000).toString();
   }, [amountSol]);
+
+  const handleAddContact = () => {
+      if (!to) return;
+      saveContact({
+          name: `Contact ${to.slice(0,4)}...`,
+          address: to,
+          inboxPk: receiverPk || undefined,
+          createdAt: Date.now()
+      });
+      setIsContact(true);
+      setStatus("Contact saved!");
+  };
 
   const handleSend = async () => {
     setStatus("");
@@ -119,11 +164,47 @@ export function PayPageClient() {
 
       setSending(true);
 
-      const { signature: sig } = await paymentEngine.sendPayment({
-        payer: wallet,
-        toPubkey: to.trim(),
-        amountLamports,
-        encryptedMemo: encryptedMemoBlob,
+      // Handle Memo Encryption
+      let finalEncryptedMemo = encryptedMemoBlob;
+      if (memoInput.trim()) {
+          setStatus("Encrypting memo...");
+          
+          const myKeypair = getMemoryKeypair() || getOrCreateInboxKeypair();
+          if (isSelfSend) {
+              // Self-send: Encrypt for ourselves (fully readable)
+              finalEncryptedMemo = encryptMemo(memoInput, myKeypair.publicKey);
+          } else if (receiverPk) {
+              // E2EE: Encrypt using Receiver's Public Key
+              try {
+                  const receiverPkBytes = bs58.decode(receiverPk);
+                  finalEncryptedMemo = encryptMemo(memoInput, receiverPkBytes);
+              } catch (e) {
+                  console.warn("Invalid Receiver PK, falling back to Sender Key", e);
+                  finalEncryptedMemo = encryptMemo(memoInput, myKeypair.publicKey);
+              }
+          } else {
+              // Send to others without known PK: 
+              // Since we don't have the receiver's encryption key in this demo,
+              // we encrypt it with OUR key so at least it's on-chain and we can read it in Sent history.
+              // The receiver won't be able to decrypt it unless they share our key (unlikely).
+              // Ideally, we'd use a key registry or wallet-based encryption (Phantom adapter).
+              console.warn("Encrypting memo with Sender's key (Receiver cannot decrypt without key exchange).");
+              finalEncryptedMemo = encryptMemo(memoInput, myKeypair.publicKey);
+          }
+      }
+
+      let sig = "";
+
+      // Private ZK Transfer
+      if (zkBalance !== null && parsedSol > zkBalance) {
+          throw new Error(`Insufficient Shielded Balance (${zkBalance.toFixed(4)} ZK-SOL)`);
+      }
+      
+      sig = await sendZkPayment({
+          payer: wallet,
+          toPubkey: to.trim(),
+          amountLamports,
+          encryptedMemo: finalEncryptedMemo,
       });
 
       const explorer = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
@@ -142,11 +223,29 @@ export function PayPageClient() {
         from: wallet.publicKey.toBase58(),
         to: to.trim(),
         amountLamports,
-        encryptedMemo: encryptedMemoBlob || "",
+        encryptedMemo: finalEncryptedMemo || "",
         createdAt: Date.now(),
+        type: payMode // 'public' or 'private'
       };
 
       setReceipt(JSON.stringify(receiptPayload, null, 2));
+      
+      // Save to "Sent" History
+      if (typeof window !== "undefined") {
+          try {
+              const SENT_KEY = "pp_sent_receipts";
+              const existing = window.localStorage.getItem(SENT_KEY);
+              const history = existing ? JSON.parse(existing) : [];
+              // Add memoText for sender's reference
+              const sentItem = { ...receiptPayload, memoText: memoInput || (hasEncryptedMemo ? "[Encrypted]" : "") };
+              history.unshift(sentItem); // Add to top
+              // Limit history to 50 items
+              if (history.length > 50) history.pop();
+              window.localStorage.setItem(SENT_KEY, JSON.stringify(history));
+          } catch (e) {
+              console.warn("Failed to save sent history", e);
+          }
+      }
       
       // Generate Claim Link
       if (typeof window !== "undefined") {
@@ -157,13 +256,19 @@ export function PayPageClient() {
       }
 
       setStatus("Payment sent on devnet. Receipt generated.");
-    } catch (e) {
-      console.error("Payment Error:", e);
+    } catch (e: any) {
+      console.error("Payment Error (Raw):", e);
+      if (typeof e === 'object' && e !== null) {
+          console.error("Payment Error (JSON):", JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
+      }
+      
       if (e instanceof Error) {
         // Detailed error for debugging
         setError(e.message);
+      } else if (e?.message) {
+        setError(e.message);
       } else {
-        setError("Failed to send payment.");
+        setError(`Failed to send payment: ${JSON.stringify(e)}`);
       }
     } finally {
       setSending(false);
@@ -206,7 +311,7 @@ export function PayPageClient() {
             Make a Payment
           </h1>
           <p className="mt-2 text-slate-400">
-            Securely send SOL with an encrypted memo.
+            Securely send funds with an encrypted memo.
           </p>
         </div>
 
@@ -215,11 +320,18 @@ export function PayPageClient() {
             <div className="flex flex-col gap-2 p-3 rounded-lg bg-black/30 border border-slate-800">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-400">Receiver</span>
-                {isVerified ? (
-                  <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded border border-green-500/30">Verified</span>
-                ) : (
-                  <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">Unverified Address</span>
-                )}
+                <div className="flex gap-2">
+                    {!isContact && to && (
+                        <button onClick={handleAddContact} className="text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors flex items-center gap-1">
+                            <UserPlus className="w-3 h-3" /> Save
+                        </button>
+                    )}
+                    {isVerified ? (
+                      <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded border border-green-500/30">Verified</span>
+                    ) : (
+                      <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">Unverified Address</span>
+                    )}
+                </div>
               </div>
               <code className="text-xs font-mono text-white break-all">
                 {to || "not specified"}
@@ -232,19 +344,26 @@ export function PayPageClient() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 ml-1">
-                Amount (SOL)
-              </label>
+              <div className="flex justify-between items-end mb-1.5 ml-1">
+                <label className="block text-xs font-semibold text-slate-300">
+                    Amount (ZK-SOL)
+                </label>
+                {zkBalance !== null && (
+                    <span className="text-xs text-emerald-400 font-mono">
+                        Available: {zkBalance.toFixed(4)} ZK-SOL
+                    </span>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type="text"
-                  className="w-full rounded-lg border border-slate-700 bg-black px-4 py-3 text-lg font-bold text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+                  className="w-full rounded-lg border bg-black px-4 py-3 text-lg font-bold text-white placeholder-slate-600 focus:outline-none focus:ring-1 font-mono transition-colors border-emerald-900/50 focus:border-emerald-500 focus:ring-emerald-500"
                   value={amountSol}
                   onChange={(e) => setAmountSol(e.target.value)}
                   placeholder="0.00"
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500 pointer-events-none">
-                  SOL
+                  ZK
                 </div>
               </div>
               {amountLamportsDisplay && (
@@ -263,8 +382,14 @@ export function PayPageClient() {
                    <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-900/50">
                     Encrypted & Attached
                   </span>
+                ) : receiverPk ? (
+                    <span className="flex items-center gap-1 text-[10px] text-indigo-400 font-medium bg-indigo-900/30 px-2 py-0.5 rounded-full border border-indigo-900/50">
+                      <Shield className="w-3 h-3" /> End-to-End Encrypted
+                    </span>
                 ) : (
-                  <span className="text-[10px] text-slate-500 italic">Optional</span>
+                  <span className="text-[10px] text-slate-500 italic">
+                      {isSelfSend ? "Optional" : "Disabled"}
+                  </span>
                 )}
               </div>
               
@@ -278,11 +403,18 @@ export function PayPageClient() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-slate-800 bg-slate-900/50 p-6 text-center">
-                  <p className="text-xs text-slate-500">
-                    No private memo attached.
-                  </p>
-                </div>
+                <textarea
+                  className="w-full h-24 rounded-lg border border-slate-800 bg-black/40 p-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono resize-none transition-all"
+                  value={memoInput}
+                  onChange={(e) => setMemoInput(e.target.value)}
+                  placeholder={
+                    isSelfSend 
+                      ? "Write a private note for yourself..." 
+                      : receiverPk 
+                        ? "Write a private memo (End-to-End Encrypted)" 
+                        : "Write a memo (Note: Receiver may not be able to decrypt without key exchange)"
+                  }
+                />
               )}
             </div>
 
@@ -301,7 +433,7 @@ export function PayPageClient() {
                     Payment Successful!
                   </p>
                   <p className="text-xs text-slate-400 mb-3">
-                    Your transaction has been confirmed on the Solana Devnet.
+                    Your private transaction has been confirmed on the Solana Devnet.
                   </p>
                   {explorerUrl && (
                     <a
@@ -327,7 +459,7 @@ export function PayPageClient() {
                     <button
                       type="button"
                       onClick={handleCopyReceipt}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-slate-800 border border-slate-700 px-4 py-3 text-sm font-bold text-white hover:bg-slate-700 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-indigo-600/20 border border-indigo-500/30 px-4 py-3 text-sm font-bold text-indigo-400 hover:bg-indigo-600/30 transition-colors"
                     >
                       Copy Receipt
                     </button>
@@ -337,10 +469,13 @@ export function PayPageClient() {
                         onClick={handleCopyClaimLink}
                         className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-emerald-900/30 border border-emerald-900/50 px-4 py-3 text-sm font-bold text-emerald-400 hover:bg-emerald-900/50 transition-colors"
                       >
-                        Copy Claim Link
+                        Copy Receipt Link
                       </button>
                     )}
                   </div>
+                  <p className="text-[10px] text-slate-500 text-center mt-2">
+                      Share the <strong>Receipt Link</strong> with the receiver so they can verify and decrypt the payment in their Inbox.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -348,7 +483,7 @@ export function PayPageClient() {
                 type="button"
                 onClick={handleSend}
                 disabled={sending || !wallet.connected}
-                className="w-full rounded-lg bg-indigo-600 px-4 py-4 text-sm font-bold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-lg px-4 py-4 text-sm font-bold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-500"
               >
                 {sending ? (
                   <span className="flex items-center justify-center gap-2">
@@ -357,7 +492,7 @@ export function PayPageClient() {
                 ) : !wallet.connected ? (
                   "Connect Wallet to Pay"
                 ) : (
-                  "Send Payment"
+                  "Send Private Payment"
                 )}
               </button>
             )}

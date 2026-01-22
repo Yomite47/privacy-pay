@@ -4,15 +4,17 @@ import { useState } from "react";
 import { InboxKeySection } from "@/components/InboxKeySection";
 import { PaymentLinkCreator } from "@/components/PaymentLinkCreator";
 import { ShieldedBalance } from "@/components/ShieldedBalance";
-import { Shield, Key, Link as LinkIcon } from "lucide-react";
+import { ContactBook } from "@/components/ContactBook";
+import { Shield, Key, Link as LinkIcon, Users } from "lucide-react";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'shield' | 'keys' | 'link'>('shield');
+  const [activeTab, setActiveTab] = useState<'shield' | 'keys' | 'link' | 'contacts'>('shield');
 
   const descriptions = {
     shield: "Manage your private assets with Zero-Knowledge compression. Shield public SOL, send privately, or unshield back to your wallet.",
     link: "Generate secure payment links with end-to-end encrypted memos. Share links to receive funds privately.",
-    keys: "Manage your inbox encryption keys. Your keys are derived from your wallet signature and never leave your device."
+    keys: "Manage your inbox encryption keys. Your keys are derived from your wallet signature and never leave your device.",
+    contacts: "Save frequent addresses and their encryption keys for easy access."
   };
 
   return (
@@ -79,6 +81,17 @@ export default function Home() {
             <Key className="w-4 h-4" />
             Keys
           </button>
+          <button
+            onClick={() => setActiveTab('contacts')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
+              activeTab === 'contacts'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Contacts
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -96,6 +109,11 @@ export default function Home() {
           {activeTab === 'keys' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <InboxKeySection />
+            </div>
+          )}
+          {activeTab === 'contacts' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <ContactBook />
             </div>
           )}
         </div>

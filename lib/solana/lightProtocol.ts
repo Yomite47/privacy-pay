@@ -23,11 +23,14 @@ export const lightRpc: Rpc = createRpc(SOLANA_RPC_ENDPOINT, SOLANA_RPC_ENDPOINT,
 export async function getShieldedHistory(owner: PublicKey): Promise<ShieldedActivity[]> {
   try {
     // 1. Get recent signatures for the user
-    const signatures = await connection.getSignaturesForAddress(owner, { limit: 20 });
+    // Limit to 10 to avoid 429 Rate Limits on getParsedTransactions
+    const signatures = await connection.getSignaturesForAddress(owner, { limit: 10 });
     
     // 2. Parse transactions to find Light Protocol interactions
     const activities: ShieldedActivity[] = [];
     
+    if (signatures.length === 0) return [];
+
     // Process in parallel chunks
     const txs = await connection.getParsedTransactions(signatures.map(s => s.signature), {
       maxSupportedTransactionVersion: 0

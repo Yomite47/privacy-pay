@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSearchParams } from "next/navigation";
@@ -10,7 +11,7 @@ import {
   getMemoryKeypair 
 } from "@/lib/crypto/keys";
 import { decryptMemo } from "@/lib/crypto/encrypt";
-import { verifyTransactionOnChain } from "@/lib/solana/verify";
+import { verifyTransaction } from "@/lib/solana/verify";
 
 type ReceiptRecord = {
   ref: string;
@@ -20,6 +21,7 @@ type ReceiptRecord = {
   amountLamports: number;
   encryptedMemo: string;
   createdAt: number;
+  type?: 'public' | 'private';
 };
 
 type InboxItem = {
@@ -28,7 +30,12 @@ type InboxItem = {
   decryptError: string;
 };
 
+type SentItem = ReceiptRecord & {
+    memoText?: string;
+};
+
 const INBOX_STORAGE_KEY = "pp_inbox_receipts";
+const SENT_STORAGE_KEY = "pp_sent_receipts";
 
 function shorten(value: string) {
   if (!value) return "n/a";
@@ -51,6 +58,21 @@ function loadStoredReceipts(): ReceiptRecord[] {
   }
 }
 
+function loadSentReceipts(): SentItem[] {
+    if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+      return [];
+    }
+    try {
+      const raw = window.localStorage.getItem(SENT_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed as SentItem[];
+    } catch {
+      return [];
+    }
+  }
+
 function saveStoredReceipts(receipts: ReceiptRecord[]) {
   if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
     return;
@@ -64,6 +86,8 @@ function InboxContent() {
   
   const [receiptInput, setReceiptInput] = useState("");
   const [items, setItems] = useState<InboxItem[]>([]);
+  const [sentItems, setSentItems] = useState<SentItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -136,6 +160,9 @@ function InboxContent() {
       decryptError: "",
     }));
     setItems(inboxItems);
+
+    const sent = loadSentReceipts();
+    setSentItems(sent);
   }, []);
 
   const handleAddReceipt = async () => {
@@ -147,8 +174,48 @@ function InboxContent() {
       return;
     }
 
+    let jsonString = receiptInput.trim();
+
+    // Check if input is a URL (starts with http) or contains receipt= param
+    if (jsonString.startsWith("http") || jsonString.includes("receipt=")) {
+        try {
+            // Attempt to parse as URL to extract receipt param
+            // We use a dummy base if it's just a fragment/path
+            const urlToParse = jsonString.startsWith("http") ? jsonString : `http://dummy.com/${jsonString}`;
+            const urlObj = new URL(urlToParse);
+            
+            let extracted = urlObj.searchParams.get("receipt");
+            
+            if (!extracted && urlObj.hash) {
+                // Check hash params (e.g. #receipt=...)
+                const hashContent = urlObj.hash.startsWith("#") ? urlObj.hash.substring(1) : urlObj.hash;
+                const hashParams = new URLSearchParams(hashContent);
+                extracted = hashParams.get("receipt");
+            }
+
+            if (extracted) {
+                jsonString = decodeURIComponent(extracted);
+            } else {
+                // If no receipt param found but it looks like a Pay Link
+                if (jsonString.includes("/pay#") || jsonString.includes("/pay?")) {
+                    throw new Error("This is a Payment Request link, not a Receipt. Please use the 'Receipt Link' generated after the payment is completed.");
+                }
+            }
+        } catch (e) {
+            if (e instanceof Error && e.message.includes("Payment Request link")) {
+                throw e;
+            }
+            console.warn("Failed to parse receipt input as URL:", e);
+            // Fallback: treat original input as potential JSON
+        }
+    }
+
     try {
-      const parsed = JSON.parse(receiptInput) as Partial<ReceiptRecord>;
+      const parsed = JSON.parse(jsonString) as Partial<ReceiptRecord>;
+
+      if (!parsed.ref && parsed.signature) {
+        parsed.ref = parsed.signature;
+      }
 
       if (!parsed.ref || typeof parsed.ref !== "string") {
         throw new Error("Receipt is missing ref.");
@@ -179,12 +246,13 @@ function InboxContent() {
       // Verify on-chain before adding!
       setStatus("Verifying transaction on Solana Devnet...");
       
-      const verification = await verifyTransactionOnChain(
+      const verification = await verifyTransaction(
         parsed.signature,
         parsed.from,
         parsed.to,
         parsed.amountLamports,
-        parsed.encryptedMemo
+        parsed.encryptedMemo,
+        parsed.type || 'public'
       );
 
       if (!verification.isValid) {
@@ -199,6 +267,7 @@ function InboxContent() {
         amountLamports: parsed.amountLamports,
         encryptedMemo: parsed.encryptedMemo,
         createdAt: parsed.createdAt,
+        type: parsed.type || 'public'
       };
 
       setItems((prev) => {
@@ -240,22 +309,50 @@ function InboxContent() {
       if (!target) return prev;
 
       try {
-        let keypair = getMemoryKeypair();
+        const memoryKeypair = getMemoryKeypair();
+        const localKeypair = getOrCreateInboxKeypair();
         
-        // Fallback to legacy local storage keys if memory keys are missing
-        // This supports old accounts during migration
-        if (!keypair) {
-           keypair = getOrCreateInboxKeypair();
+        let decrypted = "";
+        let error = "";
+
+        // Strategy 1: Try Memory Key (Wallet Identity) if available
+        if (memoryKeypair) {
+            try {
+                decrypted = decryptMemo(target.receipt.encryptedMemo, memoryKeypair.secretKey);
+            } catch (e) {
+                // If failed, fall through to Strategy 2
+                console.warn("Failed to decrypt with Wallet Key, trying Device Key...");
+            }
         }
 
-        if (!keypair) {
-           throw new Error("Inbox is locked. Please click 'Unlock Inbox' above.");
+        // Strategy 2: Try Local Key (Device Identity) if not already decrypted
+        if (!decrypted && localKeypair) {
+             try {
+                decrypted = decryptMemo(target.receipt.encryptedMemo, localKeypair.secretKey);
+                if (decrypted) {
+                    setStatus("Memo decrypted using your local device key.");
+                }
+            } catch (e) {
+                error = "Unable to decrypt memo (wrong key or corrupted data).";
+            }
         }
 
-        const memoText = decryptMemo(target.receipt.encryptedMemo, keypair.secretKey);
+        if (!decrypted && !error) {
+             if (!memoryKeypair && !localKeypair) {
+                 error = "Inbox is locked and no device key found.";
+             } else {
+                 error = "Unable to decrypt memo (wrong key).";
+             }
+        }
 
-        target.decryptedMemo = memoText;
-        target.decryptError = "";
+        if (decrypted) {
+            target.decryptedMemo = decrypted;
+            target.decryptError = "";
+        } else {
+            target.decryptedMemo = "";
+            target.decryptError = error;
+        }
+
       } catch (e) {
         if (e instanceof Error) {
           target.decryptedMemo = "";
@@ -276,12 +373,37 @@ function InboxContent() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">
-              Inbox <span className="text-sm font-normal text-slate-500 ml-2 font-mono">(Phase 0)</span>
+              Inbox
             </h1>
             <p className="text-slate-400 mt-1">Manage your payment receipts and encrypted memos.</p>
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex p-1 bg-slate-900 rounded-lg border border-slate-800">
+            <button
+                onClick={() => setActiveTab('received')}
+                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                    activeTab === 'received' 
+                    ? 'bg-slate-800 text-white shadow' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+            >
+                Received
+            </button>
+            <button
+                onClick={() => setActiveTab('sent')}
+                className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                    activeTab === 'sent' 
+                    ? 'bg-slate-800 text-white shadow' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+            >
+                Sent
+            </button>
+        </div>
+
+        {activeTab === 'received' && (
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-lg font-bold text-white mb-4">
             Unlock Inbox
@@ -305,7 +427,9 @@ function InboxContent() {
             )}
           </div>
         </section>
+        )}
 
+        {activeTab === 'received' && (
         <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-lg font-bold text-white mb-4">
             Add Payment
@@ -337,6 +461,7 @@ function InboxContent() {
             </button>
           </div>
         </section>
+        )}
 
         {status && (
           <div className="p-4 rounded-lg bg-emerald-900/20 border border-emerald-900/50">
@@ -354,10 +479,17 @@ function InboxContent() {
           </div>
         )}
 
+        {activeTab === 'received' && (
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-white px-1">Your Receipts</h2>
           
-          {items.map((item, i) => (
+          {items.length === 0 ? (
+            <div className="text-center py-12 text-slate-500 border border-dashed border-slate-800 rounded-lg">
+                <p>No received payments found locally.</p>
+                <p className="text-xs mt-2 text-slate-600">Use the "Add Payment" form above to import a receipt.</p>
+            </div>
+          ) : (
+            items.map((item, i) => (
             <div
               key={item.receipt.ref}
               className="rounded-lg border border-slate-800 bg-slate-900 p-6"
@@ -368,6 +500,11 @@ function InboxContent() {
                     <span className="text-xs font-medium text-slate-500 bg-black px-2 py-0.5 rounded border border-slate-800">
                       {new Date(item.receipt.createdAt).toLocaleString()}
                     </span>
+                    {item.receipt.type === 'private' && (
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-900/20 px-1.5 py-0.5 rounded border border-emerald-900/40 flex items-center gap-1">
+                            🛡️ ZK
+                        </span>
+                    )}
                     <a
                       href={`https://explorer.solana.com/tx/${item.receipt.signature}?cluster=devnet`}
                       target="_blank"
@@ -380,12 +517,18 @@ function InboxContent() {
                   <div className="flex items-center gap-2 font-mono text-xs text-slate-300">
                     <span className="opacity-50">From:</span>
                     <span className="bg-black px-1.5 py-0.5 rounded text-slate-200">{shorten(item.receipt.from)}</span>
+                    <Link 
+                        href={`/pay?to=${item.receipt.from}&replyTo=${item.receipt.to}`}
+                        className="ml-2 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-900/20 px-2 py-0.5 rounded border border-indigo-900/40 transition-colors"
+                    >
+                        Reply
+                    </Link>
                   </div>
                 </div>
                 
                 <div className="text-left sm:text-right">
                   <div className="text-2xl font-bold text-white tabular-nums">
-                    {(item.receipt.amountLamports / 1_000_000_000).toLocaleString()} <span className="text-sm text-slate-500 font-normal">SOL</span>
+                    {(item.receipt.amountLamports / 1_000_000_000).toLocaleString()} <span className="text-sm text-slate-500 font-normal">{item.receipt.type === 'private' ? 'ZK-SOL' : 'SOL'}</span>
                   </div>
                 </div>
               </div>
@@ -401,10 +544,16 @@ function InboxContent() {
                     </p>
                   </div>
                 ) : item.decryptError ? (
-                  <div className="bg-red-900/10 rounded p-3 border border-red-900/30">
+                  <div className="bg-red-900/10 rounded p-3 border border-red-900/30 flex justify-between items-center">
                     <p className="text-xs text-red-400">
                       {item.decryptError}
                     </p>
+                    <button 
+                        onClick={() => handleDecrypt(i)}
+                        className="text-[10px] text-red-300 underline hover:text-red-200"
+                    >
+                        Retry
+                    </button>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
@@ -421,16 +570,76 @@ function InboxContent() {
                 )}
               </div>
             </div>
-          ))}
-
-          {items.length === 0 && (
-            <div className="text-center py-12 rounded-lg border border-dashed border-slate-800 bg-slate-900/50">
-              <p className="text-sm text-slate-500">
-                No receipts in inbox yet.
-              </p>
-            </div>
+          ))
           )}
         </div>
+        )}
+
+        {activeTab === 'sent' && (
+            <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white px-1">Sent History</h2>
+            {sentItems.length === 0 ? (
+                 <div className="text-center py-12 text-slate-500">
+                    <p>No sent transactions saved locally.</p>
+                 </div>
+            ) : (
+                sentItems.map((item) => (
+                    <div
+                    key={item.ref}
+                    className="rounded-lg border border-slate-800 bg-slate-900 p-6 opacity-75 hover:opacity-100 transition-opacity"
+                    >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                        <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-slate-500 bg-black px-2 py-0.5 rounded border border-slate-800">
+                            {new Date(item.createdAt).toLocaleString()}
+                            </span>
+                            {item.type === 'private' && (
+                                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-900/20 px-1.5 py-0.5 rounded border border-emerald-900/40 flex items-center gap-1">
+                                    🛡️ ZK
+                                </span>
+                            )}
+                            <a
+                            href={`https://explorer.solana.com/tx/${item.signature}?cluster=devnet`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                            >
+                            View Tx
+                            </a>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono text-xs text-slate-300">
+                            <span className="opacity-50">To:</span>
+                            <span className="bg-black px-1.5 py-0.5 rounded text-slate-200">{shorten(item.to)}</span>
+                        </div>
+                        </div>
+                        
+                        <div className="text-left sm:text-right">
+                        <div className="text-2xl font-bold text-white tabular-nums">
+                            -{(item.amountLamports / 1_000_000_000).toLocaleString()} <span className="text-sm text-slate-500 font-normal">{item.type === 'private' ? 'ZK-SOL' : 'SOL'}</span>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-800">
+                        {item.memoText ? (
+                        <div className="bg-slate-800/50 rounded p-3 border border-slate-700/50">
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">
+                            Memo (Raw Content)
+                            </p>
+                            <p className="text-xs text-slate-300 font-mono break-all">
+                            {item.memoText}
+                            </p>
+                        </div>
+                        ) : (
+                        <p className="text-xs text-slate-500 italic">No memo attached</p>
+                        )}
+                    </div>
+                    </div>
+                ))
+            )}
+            </div>
+        )}
       </div>
     </main>
   );

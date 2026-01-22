@@ -2,18 +2,21 @@
 
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { 
-  getShieldedBalance, 
   getShieldedHistory,
   type ShieldedActivity,
-  createShieldTransaction, 
-  createUnshieldTransaction,
-  createShieldedTransferTransaction
 } from "@/lib/solana/lightProtocol";
+import { 
+    shieldFunds, 
+    unshieldFunds, 
+    sendZkPayment, 
+    getCompressedBalance 
+} from "@/lib/solana/engines/zkCompressedTransfer";
 
 export function ShieldedBalance() {
-  const { publicKey, sendTransaction } = useWallet();
+  const wallet = useWallet();
+  const { publicKey } = wallet;
   const { connection } = useConnection();
   const [balance, setBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
@@ -24,17 +27,24 @@ export function ShieldedBalance() {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [statusMsg, setStatusMsg] = useState(''); // New granular status
+  const [statusMsg, setStatusMsg] = useState(''); 
 
   const fetchData = async () => {
     if (!publicKey) return;
     setLoadingBalance(true);
-    const [bal, hist] = await Promise.all([
-      getShieldedBalance(publicKey),
-      getShieldedHistory(publicKey)
-    ]);
-    setBalance(bal);
-    setHistory(hist);
+    try {
+        const balLamports = await getCompressedBalance(publicKey.toBase58());
+        setBalance(balLamports / LAMPORTS_PER_SOL);
+        
+        try {
+            const hist = await getShieldedHistory(publicKey);
+            setHistory(hist);
+        } catch (e) {
+            console.warn("Failed to fetch history", e);
+        }
+    } catch (e) {
+        console.error("Failed to fetch data", e);
+    }
     setLoadingBalance(false);
   };
 
@@ -47,8 +57,8 @@ export function ShieldedBalance() {
 
     fetchData();
     
-    // Refresh every 10 seconds
-    const interval = setInterval(fetchData, 10000);
+    // Refresh every 60 seconds to avoid 429 Rate Limits
+    const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, [publicKey]);
 
@@ -63,50 +73,49 @@ export function ShieldedBalance() {
       if (isNaN(val) || val <= 0) {
         throw new Error("Invalid amount");
       }
+      const lamports = Math.floor(val * LAMPORTS_PER_SOL);
 
-      let tx;
+      let signature = "";
       if (mode === 'shield') {
-         setStatusMsg("Fetching state trees (ZK)...");
-         tx = await createShieldTransaction(publicKey, val);
+         setStatusMsg("Shielding funds (Public -> Private)...");
+         signature = await shieldFunds({
+             payer: wallet,
+             toPubkey: publicKey.toBase58(),
+             amountLamports: lamports
+         });
       } else if (mode === 'unshield') {
-         setStatusMsg("Generating ZK Proof (this may take 10-20s)...");
-         tx = await createUnshieldTransaction(publicKey, val);
+         setStatusMsg("Unshielding funds (Private -> Public)...");
+         signature = await unshieldFunds({
+            payer: wallet,
+            toPubkey: publicKey.toBase58(),
+            amountLamports: lamports
+         });
       } else if (mode === 'transfer') {
          if (!recipient) throw new Error("Recipient address is required");
-         let recipientPubkey;
-         try {
-           recipientPubkey = new PublicKey(recipient);
-         } catch {
-           throw new Error("Invalid recipient address");
-         }
-         setStatusMsg("Generating ZK Proof for transfer...");
-         tx = await createShieldedTransferTransaction(publicKey, recipientPubkey, val);
+         setStatusMsg("Sending Private Payment...");
+         signature = await sendZkPayment({
+            payer: wallet,
+            toPubkey: recipient,
+            amountLamports: lamports
+         });
       } else {
         return;
       }
       
-      setStatusMsg("Requesting wallet signature...");
-      const signature = await sendTransaction(tx, connection);
-      
-      setStatusMsg("Confirming transaction...");
-      // Wait for confirmation
-      const latestBlockhash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        signature,
-        blockhash: latestBlockhash.blockhash,
-        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
-      });
-      
-      setStatusMsg("Success!");
+      setStatusMsg("Transaction confirmed!");
       // Reset and refresh
       setMode('none');
       setAmount('');
       setRecipient('');
-      await fetchData();
+      
+      // Refresh balance immediately and after a delay
+      fetchData();
+      setTimeout(fetchData, 2000);
       
     } catch (error: any) {
       console.error("Transaction failed:", error);
-      alert("Transaction failed: " + (error.message || error.toString()));
+      setStatusMsg(`Error: ${error.message || error.toString()}`);
+      // Don't close modal on error so user can see message
     } finally {
       setProcessing(false);
     }
@@ -118,7 +127,20 @@ export function ShieldedBalance() {
     <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">Shielded Balance</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white">Shielded Balance</h2>
+            <button
+                onClick={fetchData}
+                disabled={loadingBalance}
+                className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
+                title="Refresh Balance"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={loadingBalance ? "animate-spin" : ""}>
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                    <path d="M21 3v5h-5" />
+                </svg>
+            </button>
+          </div>
           <p className="text-sm text-slate-400 mt-1">
             Private funds (ZK Compressed)
           </p>
@@ -204,6 +226,12 @@ export function ShieldedBalance() {
               />
             </div>
             
+            {statusMsg && (
+                <div className={`text-xs p-2 rounded ${statusMsg.startsWith("Error") ? "bg-red-500/20 text-red-300" : "bg-blue-500/20 text-blue-300"}`}>
+                    {statusMsg}
+                </div>
+            )}
+
             <button
               type="submit"
               disabled={processing || !amount || (mode === 'transfer' && !recipient)}
@@ -212,7 +240,7 @@ export function ShieldedBalance() {
               {processing ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {statusMsg || "Processing..."}
+                  Processing...
                 </>
               ) : (
                 mode === 'shield' ? 'Confirm Shield' : mode === 'unshield' ? 'Confirm Unshield' : 'Send Payment'

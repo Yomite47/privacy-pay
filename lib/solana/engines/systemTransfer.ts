@@ -3,11 +3,10 @@ import { Buffer } from "buffer";
 import type { SendPaymentParams, SendPaymentResult } from "@/lib/solana/paymentEngine";
 import { connection } from "@/lib/connection";
 
-const MEMO_PROGRAM_ID = new PublicKey("Memo1UhkJRfHyvLelZZ1i0yZNqOzVR5yq9QTYX3uad4");
+// Use Noop Program for Devnet compatibility (Memo v2 is missing on Devnet)
+const MEMO_PROGRAM_ID = new PublicKey("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV");
 
-export async function sendPaymentWithSystemTransfer(
-  params: SendPaymentParams,
-): Promise<SendPaymentResult> {
+export async function sendPaymentWithSystemTransfer(params: SendPaymentParams): Promise<SendPaymentResult> {
   const { payer, toPubkey, amountLamports, encryptedMemo } = params;
 
   if (!payer.publicKey) {

@@ -68,9 +68,10 @@ export default function Home() {
             }`}
           >
             <LinkIcon className="w-4 h-4" />
-            Receive
+            Request Payment
           </button>
-          <button
+          {/* Keys tab hidden for simplicity as per user request */}
+          {/* <button
             onClick={() => setActiveTab('keys')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
               activeTab === 'keys'
@@ -80,7 +81,7 @@ export default function Home() {
           >
             <Key className="w-4 h-4" />
             Keys
-          </button>
+          </button> */}
           <button
             onClick={() => setActiveTab('contacts')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${

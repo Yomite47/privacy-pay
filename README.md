@@ -1,97 +1,104 @@
 # Cipher Pay (Privacy Layer for Solana)
 
-Cipher Pay is a **Shielded Payment Interface** that brings on-chain privacy to everyday Solana users using **Zero-Knowledge Compression (Light Protocol)**. It allows users to store, transfer, and receive funds privately on Solana, with end-to-end encrypted memos.
+Cipher Pay is a **Shielded Payment Interface** built on Solana. It brings true financial privacy to everyday users by leveraging **Zero-Knowledge Compression (Light Protocol)**. 
+
+With Cipher Pay, you can shield your assets, send funds privately, and attach **End-to-End Encrypted (E2EE) memos** that only the intended recipient can read. It solves the "transparent ledger" problem where everyone can see your transaction history and messages.
 
 ---
 
-## 🚀 Key Features
+## 🌟 Key Features
 
-### 🛡️ Private ZK Transfers
-- **Go Private:** Send funds using Light Protocol's Zero-Knowledge compression.
-- **Low Cost:** Uses Solana's state compression technology for minimal rent fees.
+### 🛡️ **Shielded Transactions**
+- **Go Private:** Convert public SOL into "Shielded SOL" (ZK-compressed assets).
+- **Hide Your Tracks:** Transfers between shielded accounts break the on-chain link between sender and receiver.
+- **Low Cost:** Powered by Solana's state compression, ensuring privacy is affordable.
 
-### 🔗 Secure Payment Links
-- **Smart Links:** Generate payment requests that include your **Privacy Key**.
-- **End-to-End Encryption (E2EE):** Memos sent via these links are encrypted specifically for you.
+### 🔐 **End-to-End Encrypted Memos**
+- **Private Messaging:** Attach notes (e.g., "For Design Work", "Salary") that are encrypted client-side.
+- **Secure Key Exchange:** Payment links automatically share your encryption key so senders can write messages only *you* can decode.
+- **No Snooping:** Even the server cannot read your memos.
 
-### 📒 Contact Book
-- **Save Contacts:** Store frequent addresses with their encryption keys.
-- **One-Click Pay:** Send money to friends instantly without copy-pasting keys.
+### 📒 **Contact Book**
+- **Save Friends:** Store frequent addresses and their unique privacy keys.
+- **Quick Pay:** Send money instantly without needing to ask for a payment link every time.
+- **Syncs Locally:** Your contacts are stored securely on your device.
 
-### 📨 Encrypted Inbox
-- **Secret Messages:** Receive private notes (e.g., "Consulting Fee").
-- **Smart Decryption:** Auto-detects whether a memo is private (E2EE) or public (Plaintext).
-- **Client-Side Privacy:** Keys are derived from your wallet signature; nothing is stored on a server.
-
----
-
-## 🏁 Quick Start Guide (Devnet)
-
-### 1. Prerequisite: Wallet Setup
-1. Install **Phantom**, **Solflare**, or **Backpack** wallet.
-2. Switch network to **Devnet** (Settings > Developer Settings > Change Network).
-3. Get **Devnet SOL** from [faucet.solana.com](https://faucet.solana.com).
-
-### 2. Requesting Payment (The Secure Way)
-To ensure you can read the encrypted memos people send you:
-1. Go to the **Dashboard**.
-2. Click **"Create Payment Link"**.
-3. Copy the link (e.g., `.../pay?to=YourAddr&pk=YourKey...`).
-4. Share this link with the payer. It contains your **Public Key** so they can encrypt messages for you.
-
-### 3. Sending a Private Payment
-1. Open a **Payment Link** (or click "Pay" in your Contact Book).
-2. The app automatically checks if the receiver has an encryption key:
-   - **Shielded 🛡️**: Key found. Message is End-to-End Encrypted.
-   - **Warning ⚠️**: No key found. You can choose to send a **Public Memo** (readable by receiver) or a **Private Note** (readable only by you).
-3. Enter Amount and Memo.
-4. Click **Send**.
-5. Copy the **Receipt Link** and send it to the receiver.
-
-### 4. Managing Contacts
-1. When you pay someone, click **"Save Contact"** on the confirmation screen.
-2. Go to **Dashboard > Contacts** to view your saved addresses.
-3. Click the **Send Icon** to pay them instantly with the correct encryption settings.
-
-### 5. Checking Your Inbox
-1. Go to **Inbox**.
-2. Paste the **Receipt JSON** or open the **Receipt Link** sent by the payer.
-3. Click **"Add Payment to Inbox"**.
-4. Sign the "Unlock Inbox" request (no gas fee) to derive your decryption keys.
-5. Read your private memos!
+### 📨 **Receipt-Based Inbox**
+- **Proof of Payment:** Senders generate a "Receipt Link" after paying.
+- **Claim & Decrypt:** Receivers use the receipt to verify the transaction and decrypt the private memo in their Inbox.
 
 ---
 
-## 🛠️ Setup & Installation (For Developers)
+## 🚀 Step-by-Step User Guide (Devnet)
 
-### 1. Clone & Install
-```bash
-git clone https://github.com/yomite47/privacy-pay.git
-cd privacy-pay
-npm install
-```
+### 1️⃣ Prerequisite: Wallet Setup
+1. Install a Solana wallet like **Phantom**, **Solflare**, or **Backpack**.
+2. **Switch to Devnet**:
+   - *Phantom*: Settings > Developer Settings > Change Network > **Devnet**.
+   - *Solflare*: Settings > General > Network > **Devnet**.
+3. **Get Free Devnet SOL**: Visit [faucet.solana.com](https://faucet.solana.com) and airdrop 1-2 SOL to your wallet address.
 
-### 2. Configure Environment
-Create a `.env.local` file in the root directory:
-```env
-# Helius RPC Key (Required for ZK Compression)
-HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_API_KEY
-NEXT_PUBLIC_HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_API_KEY
+### 2️⃣ How to Request Payment (Securely)
+To ensure you can read the private messages people send you:
+1. Connect your wallet and go to the **Dashboard**.
+2. Click the **"Request Payment"** tab.
+3. Click **"Create Payment Link"**.
+4. **Copy the Link** and send it to the payer.
+   - *Why?* This link contains your **Privacy Key**. Without it, the sender can't encrypt messages for you!
 
-# Backend Proxy Config
-NEXT_PUBLIC_SOLANA_RPC_URL=/api/rpc
-```
+### 3️⃣ How to Send Money
+1. Open a **Payment Link** sent to you (or select a Contact).
+2. The app checks for encryption keys:
+   - **Shielded 🛡️**: Key found! You can write a truly private memo.
+   - **Warning ⚠️**: No key found. You can choose to send a **Public Memo** (readable by anyone) or a **Private Note** (readable only by you).
+3. Enter the **Amount** (in SOL).
+4. Click **Send Private Payment**.
+5. Once successful, click **"Copy Receipt Link"** and send it to the receiver.
 
-### 3. Run Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+### 4️⃣ How to Check Your Inbox
+1. Go to the **Inbox** tab.
+2. If you have a Receipt Link, just open it in your browser.
+3. Otherwise, paste the **Receipt JSON** into the text box.
+4. Click **"Add Payment to Inbox"**.
+5. Click **"Sign to Unlock Inbox"**.
+   - *Note:* This is a free signature request used to derive your decryption keys securely.
+6. Your private memos will be decrypted and displayed!
 
 ---
 
-## ⚠️ Privacy Model
+## 💻 For Developers
 
-Cipher Pay provides **Pseudonymity** and **Asset Graph Obfuscation**.
-- **Private:** Link between sender/receiver notes, memo content, shielded balance.
-- **Public:** Shielding/Unshielding actions, amounts (in V1), transaction timing.
+### Tech Stack
+- **Frontend**: Next.js 14 (App Router), Tailwind CSS
+- **Blockchain**: Solana Web3.js
+- **Privacy Engine**: Light Protocol (ZK Compression)
+- **RPC Provider**: Helius (DA & Compression Support)
+
+### Installation
+1. **Clone the repo:**
+   ```bash
+   git clone https://github.com/yomite47/privacy-pay.git
+   cd privacy-pay
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment:**
+   Create a `.env.local` file:
+   ```env
+   NEXT_PUBLIC_HELIUS_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_KEY
+   ```
+
+4. **Run the app:**
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## ⚠️ Disclaimer
+**This project is currently on Solana Devnet.**
+It is a proof-of-concept built for the **Solana Renaissance Hackathon**. Do not use real funds. ZK Compression is a powerful new technology; please use responsibly.

@@ -18,7 +18,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col text-white relative overflow-hidden bg-slate-950 pt-24 md:pt-32">
+    <main className="flex min-h-screen flex-col text-white relative overflow-hidden bg-slate-950 pt-24 md:pt-32 pb-24 md:pb-0">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[100px]" />
@@ -30,7 +30,7 @@ export default function Home() {
         <div className="space-y-8 md:space-y-12 text-center w-full max-w-2xl">
           <div className="space-y-6 md:space-y-10">
             <div className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-medium text-emerald-400 shadow-xl shadow-purple-900/5">
-              Live on Solana Devnet
+              Live on Solana Devnet • Powered by Light Protocol
             </div>
             
             <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-slate-400 drop-shadow-sm">
@@ -47,7 +47,7 @@ export default function Home() {
         
         <div className="mt-12 md:mt-24 w-full max-w-xl space-y-8 md:space-y-12">
         {/* Tab Navigation */}
-        <div className="flex p-1.5 space-x-2 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
+        <div className="flex flex-col sm:flex-row p-1.5 gap-2 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
           <button
             onClick={() => setActiveTab('shield')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${
@@ -117,6 +117,23 @@ export default function Home() {
               <ContactBook />
             </div>
           )}
+        </div>
+      </div>
+      
+      {/* Footer Content - To make the bottom less empty */}
+      <div className="w-full max-w-4xl mx-auto mt-auto pt-12 pb-24 md:pb-12 text-center opacity-40 hover:opacity-100 transition-opacity duration-500">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <p className="text-xs font-mono text-slate-500">
+            Secured by ZK Compression • Built on Solana
+          </p>
+          <div className="flex gap-4 text-[10px] text-slate-600 uppercase tracking-widest">
+            <span>Privacy</span>
+            <span>•</span>
+            <span>Speed</span>
+            <span>•</span>
+            <span>Security</span>
+          </div>
         </div>
       </div>
       </div>

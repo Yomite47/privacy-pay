@@ -107,7 +107,7 @@ function InboxContent() {
         throw new Error("Please connect a wallet that supports message signing.");
       }
       
-      const message = new TextEncoder().encode("Unlock Privacy Pay Inbox");
+      const message = new TextEncoder().encode("Unlock Cipher Pay Inbox");
       const signature = await wallet.signMessage(message);
       
       const keypair = deriveKeysFromSignature(signature);
@@ -368,7 +368,7 @@ function InboxContent() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 bg-black text-white">
+    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 pb-24 md:pb-8 bg-black text-white">
       <div className="w-full max-w-3xl space-y-8">
         <div className="flex items-center justify-between">
           <div>

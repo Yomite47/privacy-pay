@@ -308,7 +308,7 @@ export function PayPageClient() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-black text-white">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 pb-24 md:pb-8 bg-black text-white">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-white">
@@ -427,12 +427,12 @@ export function PayPageClient() {
                       <div className="flex items-start gap-3">
                           <span className="text-amber-500 text-lg mt-0.5">⚠️</span>
                           <div>
-                              <p className="text-[11px] text-amber-400 font-bold mb-1">
+                              <p className="text-xs font-bold text-amber-400 mb-1">
                                   Missing Encryption Key
                               </p>
-                              <p className="text-[10px] text-amber-200/80 mb-3 leading-relaxed">
-                                  The receiver has not shared their Privacy Key (via Payment Link). 
-                                  By default, this memo will be encrypted for <strong>YOUR history only</strong>. The receiver will NOT be able to read it.
+                              <p className="text-xs text-amber-200/80 mb-3 leading-relaxed">
+                                  The receiver has not shared their Privacy Key. 
+                                  By default, this memo will be encrypted for <strong>YOUR history only</strong>.
                               </p>
                               
                               <label className="flex items-center gap-2 cursor-pointer group">
@@ -440,10 +440,10 @@ export function PayPageClient() {
                                       type="checkbox" 
                                       checked={sendAsPublic}
                                       onChange={(e) => setSendAsPublic(e.target.checked)}
-                                      className="w-4 h-4 rounded border-amber-500/50 bg-black/50 text-amber-500 focus:ring-amber-500/50"
+                                      className="w-5 h-5 rounded border-amber-500/50 bg-black/50 text-amber-500 focus:ring-amber-500/50"
                                   />
-                                  <span className="text-[10px] text-slate-300 group-hover:text-white transition-colors">
-                                      Send as <strong>Public Memo</strong> (Visible to everyone, readable by Receiver)
+                                  <span className="text-xs text-slate-300 group-hover:text-white transition-colors">
+                                      Send as <strong>Public Memo</strong> (Readable by Receiver)
                                   </span>
                               </label>
                           </div>

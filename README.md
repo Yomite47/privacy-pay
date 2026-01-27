@@ -77,8 +77,8 @@ To ensure you can read the private messages people send you:
 ### Installation
 1. **Clone the repo:**
    ```bash
-   git clone https://github.com/yomite47/privacy-pay.git cipher-pay
-   cd cipher-pay
+   git clone https://github.com/yomite47/privacy-pay.git
+   cd privacy-pay
    ```
 
 2. **Install dependencies:**

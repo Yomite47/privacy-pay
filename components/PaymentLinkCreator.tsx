@@ -25,7 +25,7 @@ export function PaymentLinkCreator() {
   const handleUnlock = async () => {
     try {
         if (!signMessage) throw new Error("Wallet does not support signing");
-        const message = new TextEncoder().encode("Unlock Cipher Pay Inbox");
+        const message = new TextEncoder().encode("Unlock Privacy Pay Inbox");
         const signature = await signMessage(message);
         const keypair = deriveKeysFromSignature(signature);
         setMemoryKeypair(keypair);

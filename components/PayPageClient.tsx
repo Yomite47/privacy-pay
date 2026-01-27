@@ -235,9 +235,9 @@ export function PayPageClient() {
       setReceipt(JSON.stringify(receiptPayload, null, 2));
       
       // Save to "Sent" History
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && wallet.publicKey) {
           try {
-              const SENT_KEY = "pp_sent_receipts";
+              const SENT_KEY = `pp_sent_receipts_${wallet.publicKey.toBase58()}`;
               const existing = window.localStorage.getItem(SENT_KEY);
               const history = existing ? JSON.parse(existing) : [];
               // Add memoText for sender's reference

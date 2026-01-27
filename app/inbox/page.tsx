@@ -43,12 +43,15 @@ function shorten(value: string) {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
-function loadStoredReceipts(): ReceiptRecord[] {
+function loadStoredReceipts(owner?: string): ReceiptRecord[] {
   if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
     return [];
   }
+  if (!owner) return [];
+
   try {
-    const raw = window.localStorage.getItem(INBOX_STORAGE_KEY);
+    const key = `${INBOX_STORAGE_KEY}_${owner}`;
+    const raw = window.localStorage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -58,12 +61,15 @@ function loadStoredReceipts(): ReceiptRecord[] {
   }
 }
 
-function loadSentReceipts(): SentItem[] {
+function loadSentReceipts(owner?: string): SentItem[] {
     if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
       return [];
     }
+    if (!owner) return [];
+
     try {
-      const raw = window.localStorage.getItem(SENT_STORAGE_KEY);
+      const key = `${SENT_STORAGE_KEY}_${owner}`;
+      const raw = window.localStorage.getItem(key);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
@@ -73,11 +79,12 @@ function loadSentReceipts(): SentItem[] {
     }
   }
 
-function saveStoredReceipts(receipts: ReceiptRecord[]) {
-  if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+function saveStoredReceipts(receipts: ReceiptRecord[], owner?: string) {
+  if (typeof window === "undefined" || typeof window.localStorage === "undefined" || !owner) {
     return;
   }
-  window.localStorage.setItem(INBOX_STORAGE_KEY, JSON.stringify(receipts));
+  const key = `${INBOX_STORAGE_KEY}_${owner}`;
+  window.localStorage.setItem(key, JSON.stringify(receipts));
 }
 
 function InboxContent() {
@@ -107,7 +114,7 @@ function InboxContent() {
         throw new Error("Please connect a wallet that supports message signing.");
       }
       
-      const message = new TextEncoder().encode("Unlock Cipher Pay Inbox");
+      const message = new TextEncoder().encode("Unlock Privacy Pay Inbox");
       const signature = await wallet.signMessage(message);
       
       const keypair = deriveKeysFromSignature(signature);
@@ -153,7 +160,8 @@ function InboxContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    const stored = loadStoredReceipts();
+    const owner = wallet.publicKey?.toBase58();
+    const stored = loadStoredReceipts(owner);
     const inboxItems: InboxItem[] = stored.map((r) => ({
       receipt: r,
       decryptedMemo: "",
@@ -161,9 +169,9 @@ function InboxContent() {
     }));
     setItems(inboxItems);
 
-    const sent = loadSentReceipts();
+    const sent = loadSentReceipts(owner);
     setSentItems(sent);
-  }, []);
+  }, [wallet.publicKey]);
 
   const handleAddReceipt = async () => {
     setStatus("");
@@ -284,7 +292,7 @@ function InboxContent() {
           ...prev,
         ];
         const toStore = next.map((item) => item.receipt);
-        saveStoredReceipts(toStore);
+        saveStoredReceipts(toStore, wallet.publicKey?.toBase58());
         return next;
       });
 

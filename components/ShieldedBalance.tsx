@@ -30,6 +30,9 @@ import {
 import { usePrices } from "@/hooks/usePrices";
 import { useShieldedHistory } from "@/hooks/useShieldedHistory";
 import { isSolDomain, resolveSolDomain } from "@/lib/solana/sns";
+import { isStealthMetaAddress, parseStealthMetaAddress, sendToStealthAddress } from "@/lib/solana/stealth-send";
+import { useTimeLock } from "@/hooks/useTimeLock";
+import { type DelayBucket } from "@/lib/solana/time-lock";
 
 export function ShieldedBalance() {
   return <ShieldedBalanceReal />;
@@ -45,6 +48,7 @@ function ShieldedBalanceReal() {
   const prices = usePrices();
   const { history: txHistory, isLoading: historyLoading, refresh: refreshHistory } =
     useShieldedHistory();
+  const { schedule: scheduleTimeLock } = useTimeLock();
 
   type Panel = "shield" | "swap" | "send" | "unshield" | null;
   type TxState = { status: "idle" | "pending" | "success" | "error"; message: string; sig: string | null };
@@ -106,6 +110,8 @@ function ShieldedBalanceReal() {
 
   const [recipientRisk, setRecipientRisk] = useState<RiskCheckResult | null>(null);
   const [isCheckingRecipient, setIsCheckingRecipient] = useState(false);
+  const [delayBucket, setDelayBucket] = useState<DelayBucket | "instant">("instant");
+  const [isStealthRecipient, setIsStealthRecipient] = useState(false);
 
   // SNS .sol domain resolution
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
@@ -207,6 +213,11 @@ function ShieldedBalanceReal() {
     return () => clearTimeout(timer);
   }, [openPanel, sendRecipient]);
 
+  // Detect stealth meta-address in recipient input
+  useEffect(() => {
+    setIsStealthRecipient(isStealthMetaAddress(sendRecipient.trim()));
+  }, [sendRecipient]);
+
   useEffect(() => {
     const latest = notifications[0];
     if (!latest) return;
@@ -223,6 +234,8 @@ function ShieldedBalanceReal() {
     setShieldAmount("");
     setResolvedAddress(null);
     setDomainError(null);
+    setDelayBucket("instant");
+    setIsStealthRecipient(false);
     setSwapTx({ status: "idle", message: "", sig: null });
     setSendRecipient("");
     setSendAmount("");
@@ -577,21 +590,54 @@ function ShieldedBalanceReal() {
       setSendTx({ status: "error", message: "Connect wallet to continue", sig: null });
       return;
     }
+    const amt = parseAmount(sendAmount);
+    if (!amt) {
+      setSendTx({ status: "error", message: "Invalid amount", sig: null });
+      return;
+    }
+
+    // ── Stealth send path ────────────────────────────────────────────────────
+    if (isStealthRecipient) {
+      setSendTx({ status: "pending", message: "Preparing stealth payment…", sig: null });
+      try {
+        const metaAddress = parseStealthMetaAddress(sendRecipient.trim());
+        const lamports = Math.round(amt * 1e9);
+
+        if (delayBucket !== "instant") {
+          // Queue via time-lock — executes at random future time
+          scheduleTimeLock({
+            recipient: sendRecipient.trim(),
+            amountLamports: lamports,
+            token: tokenConfig.symbol,
+            bucket: delayBucket,
+            isStealthPayment: true,
+          });
+          setSendTx({ status: "success", message: `Stealth payment queued (${delayBucket} delay)`, sig: null });
+          return;
+        }
+
+        const { signature, stealthAddress } = await sendToStealthAddress({
+          wallet,
+          connection,
+          recipientMetaAddress: metaAddress,
+          lamports,
+        });
+        setSendTx({ status: "success", message: `Sent to stealth address ${stealthAddress.slice(0, 8)}…`, sig: signature });
+        await refresh();
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : JSON.stringify(e);
+        setSendTx({ status: "error", message, sig: null });
+      }
+      return;
+    }
+
+    // ── Standard send with optional time-lock ───────────────────────────────
     if (!recipientValidation.isValid || !recipientValidation.recipient) {
       setSendTx({ status: "error", message: "Invalid address", sig: null });
       return;
     }
     if (recipientRisk?.riskLevel === "flagged") {
-      setSendTx({
-        status: "error",
-        message: "Address flagged — transfer blocked",
-        sig: null,
-      });
-      return;
-    }
-    const amt = parseAmount(sendAmount);
-    if (!amt) {
-      setSendTx({ status: "error", message: "Invalid amount", sig: null });
+      setSendTx({ status: "error", message: "Address flagged — transfer blocked", sig: null });
       return;
     }
     if (amt > shieldedBalance) {
@@ -599,6 +645,20 @@ function ShieldedBalanceReal() {
       return;
     }
 
+    // Time-locked path — queue and return
+    if (delayBucket !== "instant") {
+      scheduleTimeLock({
+        recipient: recipientValidation.recipient.toBase58(),
+        amountLamports: Math.round(amt * 10 ** tokenConfig.decimals),
+        token: tokenConfig.symbol,
+        bucket: delayBucket,
+        isStealthPayment: false,
+      });
+      setSendTx({ status: "success", message: `Payment queued (${delayBucket} delay) — keep tab open`, sig: null });
+      return;
+    }
+
+    // Instant send path
     setSendTx({ status: "pending", message: "", sig: null });
     try {
       const sig = await transferCompressedToken({
@@ -613,8 +673,7 @@ function ShieldedBalanceReal() {
       setSendTx({ status: "success", message: "", sig });
       await refresh();
     } catch (e: unknown) {
-      const message =
-        e instanceof Error ? e.message : typeof e === "string" ? e : JSON.stringify(e);
+      const message = e instanceof Error ? e.message : typeof e === "string" ? e : JSON.stringify(e);
       setSendTx({ status: "error", message, sig: null });
     }
   }
@@ -1265,8 +1324,14 @@ function ShieldedBalanceReal() {
               value={sendRecipient}
               onChange={(e) => setSendRecipient(e.target.value)}
               className="cipher-input w-full"
-              placeholder="Solana address or .sol domain"
+              placeholder="Wallet address, .sol domain, or stealth meta-address"
             />
+            {isStealthRecipient && (
+              <div className="flex items-center gap-2 text-[12px] text-[color:var(--color-emerald)]">
+                <span className="h-[6px] w-[6px] rounded-full bg-[color:var(--color-emerald)]" />
+                Stealth address detected — recipient identity hidden on-chain
+              </div>
+            )}
             {isSolDomain(sendRecipient) && (
               <div className="text-[12px]">
                 {isResolvingDomain && (
@@ -1381,14 +1446,49 @@ function ShieldedBalanceReal() {
             </div>
           </div>
 
+          {/* Time-lock bucket selector */}
+          <div className="mt-5 space-y-2">
+            <div className="cipher-label">SEND TIMING</div>
+            <div className="grid grid-cols-4 gap-2">
+              {(["instant", "short", "medium", "long"] as const).map((bucket) => {
+                const labels = {
+                  instant: { title: "Instant", sub: "Now" },
+                  short:   { title: "Short",   sub: "2–15 min" },
+                  medium:  { title: "Medium",  sub: "15–60 min" },
+                  long:    { title: "Long",    sub: "1–6 hrs" },
+                };
+                const isActive = delayBucket === bucket;
+                return (
+                  <button
+                    key={bucket}
+                    type="button"
+                    onClick={() => setDelayBucket(bucket)}
+                    className={`rounded-[var(--radius-md)] border px-2 py-2 text-center transition-all duration-150 ${
+                      isActive
+                        ? "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-white"
+                        : "border-[color:var(--color-border)] text-[color:var(--color-text-secondary)] hover:border-[color:var(--color-accent)]"
+                    }`}
+                  >
+                    <div className="text-[11px] font-medium">{labels[bucket].title}</div>
+                    <div className="text-[10px] opacity-70">{labels[bucket].sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+            {delayBucket !== "instant" && (
+              <div className="text-[11px] text-[color:var(--color-text-muted)]">
+                Payment will execute at a random time within the chosen window. Keep this tab open.
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={() => void handleSend()}
             disabled={
               sendTx.status === "pending" ||
               !isConnected ||
-              !recipientValidation.isValid ||
-              recipientRisk?.riskLevel === "flagged"
+              (!isStealthRecipient && (!recipientValidation.isValid || recipientRisk?.riskLevel === "flagged"))
             }
             title={recipientRisk?.riskLevel === "flagged" ? "Address flagged — transfer blocked" : undefined}
             className={`cipher-btn-primary mt-5 w-full disabled:opacity-50 ${
@@ -1401,7 +1501,11 @@ function ShieldedBalanceReal() {
               {sendTx.status === "pending" && <span className="animate-spin">↻</span>}
               {recipientRisk?.riskLevel === "flagged"
                 ? "Transfer blocked"
-                : `Send ${sendAmount || "0"} ${tokenConfig.symbol}`}
+                : isStealthRecipient
+                  ? `Send ${sendAmount || "0"} ${tokenConfig.symbol} via stealth`
+                  : delayBucket !== "instant"
+                    ? `Queue ${sendAmount || "0"} ${tokenConfig.symbol} (${delayBucket})`
+                    : `Send ${sendAmount || "0"} ${tokenConfig.symbol}`}
             </span>
           </button>
 

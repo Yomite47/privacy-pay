@@ -79,7 +79,7 @@ export function useConfidentialTransfer() {
     setIsLoading(true);
     setError(null);
     try {
-      return await depositToConfidential({ connection, wallet, mint, amount });
+      return await depositToConfidential({ connection, wallet, mint, amount, decimals: 6 });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Deposit failed";
       setError(message);
@@ -100,7 +100,7 @@ export function useConfidentialTransfer() {
       return await applyPendingBalance({
         connection, wallet, mint,
         expectedDecryptedAvailableBalance: expectedBalance,
-        currentPendingBalanceCounterValue: pendingCounter,
+        pendingBalanceCounterValue: pendingCounter,
       });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Apply pending failed";
@@ -134,7 +134,7 @@ export function useConfidentialTransfer() {
     setError(null);
     try {
       return await withdrawFromConfidential({
-        connection, wallet, mint, amount,
+        connection, wallet, mint, amount, decimals: 6,
         decryptableAvailableBalance: availableBalance,
       });
     } catch (e: unknown) {

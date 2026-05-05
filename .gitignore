@@ -53,3 +53,4 @@ wallet.json
 /wallets
 target/
 scripts/demo-wallets.json
+scripts/relayer-pubkey.txt

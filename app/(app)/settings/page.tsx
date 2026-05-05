@@ -1,4 +1,5 @@
 import { InboxKeySection } from "@/components/InboxKeySection";
+import { ViewingKeyPanel } from "@/components/ViewingKeyPanel";
 
 export default function SettingsPage() {
   return (
@@ -12,11 +13,22 @@ export default function SettingsPage() {
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto p-6 pb-24 md:pb-6 bg-[#f8f8f8] dark:bg-black">
-        <div className="max-w-xl space-y-6">
-          <p className="text-sm text-black/50 dark:text-white/40">
-            Manage your local encryption keys. Keys are derived from your wallet signature and never leave your device.
-          </p>
-          <InboxKeySection />
+        <div className="max-w-xl space-y-8">
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-black/60 dark:text-white/60 uppercase tracking-wider">Encryption Keys</h2>
+            <p className="text-sm text-black/50 dark:text-white/40">
+              Keys are derived from your wallet signature and never leave your device.
+            </p>
+            <InboxKeySection />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-black/60 dark:text-white/60 uppercase tracking-wider">Viewing Key</h2>
+            <p className="text-sm text-black/50 dark:text-white/40">
+              Share with auditors so they can read your transaction history without being able to spend funds.
+            </p>
+            <ViewingKeyPanel />
+          </div>
         </div>
       </div>
 

@@ -6,6 +6,9 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { ShieldedBalance } from "@/components/ShieldedBalance";
 import { PaymentLinkCreator } from "@/components/PaymentLinkCreator";
 import { ContactBook } from "@/components/ContactBook";
+import { ConfidentialBalancePanel } from "@/components/ConfidentialBalancePanel";
+import { StealthAddressPanel } from "@/components/StealthAddressPanel";
+import { TimeLockPanel } from "@/components/TimeLockPanel";
 import { Bell, User, ChevronDown, Copy, LogOut } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -89,7 +92,14 @@ function DashboardContent() {
   const view = searchParams.get("view") || "wallet";
   const { publicKey } = useWallet();
 
-  const pageTitle = view === "contacts" ? "Contacts" : "Wallet";
+  const pageTitles: Record<string, string> = {
+    wallet: "Wallet",
+    contacts: "Contacts",
+    confidential: "Confidential",
+    stealth: "Stealth Address",
+    pending: "Pending Payments",
+  };
+  const pageTitle = pageTitles[view] ?? "Wallet";
 
   return (
     <div className="flex flex-1 overflow-hidden min-w-0">
@@ -135,6 +145,12 @@ function DashboardContent() {
             </div>
           ) : view === "contacts" ? (
             <ContactBook />
+          ) : view === "confidential" ? (
+            <ConfidentialBalancePanel />
+          ) : view === "stealth" ? (
+            <StealthAddressPanel />
+          ) : view === "pending" ? (
+            <TimeLockPanel />
           ) : (
             <ShieldedBalance />
           )}

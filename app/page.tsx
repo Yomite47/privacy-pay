@@ -175,7 +175,7 @@ export default function LandingPage() {
             </div>
 
             {/* Card 2 — Center Statement + Chain Visual (spans 2 rows) */}
-            <div className="relative bg-[#f2f2f2] rounded-3xl p-6 flex flex-col items-center justify-between overflow-hidden md:row-span-2 group hover:shadow-lg transition-shadow">
+            <div className="relative bg-[#f2f2f2] r  ounded-3xl p-6 flex flex-col items-center justify-between overflow-hidden md:row-span-2 group hover:shadow-lg transition-shadow">
               <div className="flex-1 flex items-center justify-center">
                 <h3 className="text-2xl sm:text-3xl font-black text-black text-center tracking-tight leading-snug uppercase">
                   ONE TOKEN.<br />ALL ROUND PRIVACY.

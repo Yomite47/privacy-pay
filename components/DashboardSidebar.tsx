@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LayoutDashboard, Inbox, Users, Settings, Infinity } from "lucide-react";
+import { LayoutDashboard, Inbox, Users, Settings, Infinity, ShieldCheck, EyeOff, Clock } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 
 function NavItem({
@@ -50,11 +50,11 @@ export function DashboardSidebar() {
       </div>
 
       {/* Main nav */}
-      <div className="px-3 pt-6 flex-1">
+      <div className="px-3 pt-6 flex-1 overflow-y-auto">
         <p className="text-[10px] font-semibold text-black/20 dark:text-white/20 uppercase tracking-widest mb-2 px-2">
           Main
         </p>
-        <nav className="space-y-0.5">
+        <nav className="space-y-0.5 mb-4">
           <NavItem
             href="/dashboard"
             icon={LayoutDashboard}
@@ -72,6 +72,30 @@ export function DashboardSidebar() {
             icon={Users}
             label="Contacts"
             active={pathname === "/dashboard" && view === "contacts"}
+          />
+        </nav>
+
+        <p className="text-[10px] font-semibold text-black/20 dark:text-white/20 uppercase tracking-widest mb-2 px-2">
+          Privacy
+        </p>
+        <nav className="space-y-0.5">
+          <NavItem
+            href="/dashboard?view=confidential"
+            icon={ShieldCheck}
+            label="Confidential"
+            active={pathname === "/dashboard" && view === "confidential"}
+          />
+          <NavItem
+            href="/dashboard?view=stealth"
+            icon={EyeOff}
+            label="Stealth"
+            active={pathname === "/dashboard" && view === "stealth"}
+          />
+          <NavItem
+            href="/dashboard?view=pending"
+            icon={Clock}
+            label="Pending"
+            active={pathname === "/dashboard" && view === "pending"}
           />
         </nav>
       </div>
